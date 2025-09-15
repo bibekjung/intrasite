@@ -1,7 +1,7 @@
 
 export default function Login() {
-console.log("")
-  return (
+console.log("ddd")  
+return (
     <div className="min-h-screen bg-gray-100">
 
       <div className="flex h-screen items-center justify-center">
