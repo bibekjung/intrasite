@@ -1,9 +1,6 @@
-
 export default function Login() {
-console.log("ddd")  
-return (
+  return (
     <div className="min-h-screen bg-gray-100">
-
       <div className="flex h-screen items-center justify-center">
         <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
           <h2 className="mb-6 text-center text-2xl font-bold text-gray-800">
