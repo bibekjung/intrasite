@@ -1,13 +1,9 @@
-// import Sidebar from '../components/Sidebar';
-// import Header from '../components/Header';
-// import React from 'react';
+
 export default function Login() {
-  // ...existing code...
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* <Sidebar />
-      <Header /> */}
+
       <div className="flex h-screen items-center justify-center">
         <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
           <h2 className="mb-6 text-center text-2xl font-bold text-gray-800">
