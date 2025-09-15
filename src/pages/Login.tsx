@@ -1,6 +1,6 @@
 
 export default function Login() {
-
+console.log("")
   return (
     <div className="min-h-screen bg-gray-100">
 
