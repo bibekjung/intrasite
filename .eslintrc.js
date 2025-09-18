@@ -9,6 +9,8 @@ module.exports = {
   rules: {
     'no-console': ['error', { allow: ['warn', 'error'] }],
     '@typescript-eslint/no-unused-vars': ['error'],
+    // allow 'any' in the project
+    '@typescript-eslint/no-explicit-any': 'off',
   },
   env: {
     browser: true,
