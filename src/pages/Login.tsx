@@ -18,7 +18,7 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div className=" min-h-screen bg-gray-300 flex items-center justify-center p-4">
       <div className=" rounded-2xl shadow-lg w-full max-w-5xl min-h-[600px] overflow-hidden relative">
         <div
           className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center px-6 py-10 md:px-10 text-white transition-transform duration-1000 ease-in-out"
