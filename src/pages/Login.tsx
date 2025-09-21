@@ -1,20 +1,28 @@
+import {
+  setEmail,
+  setIsAnimationComplete,
+  setPassword,
+} from '@/slices/authSlice';
+import { RootState } from '@/store/store';
 import { Mail, Lock } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
 const LoginForm = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isAnimationComplete, setIsAnimationComplete] = useState(false);
+  const dispatch = useDispatch();
+  const { email, password, isAnimationComplete } = useSelector(
+    (state: RootState) => state.auth,
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsAnimationComplete(true);
+      dispatch(setIsAnimationComplete(true));
     }, 500);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
+  const handleLogin = () => {
+    window.location.href = '/dashboard';
   };
 
   return (
@@ -77,7 +85,7 @@ const LoginForm = () => {
                       type="email"
                       id="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => dispatch(setEmail(e.target.value))}
                       className="w-full outline-none text-sm md:text-base"
                       placeholder="Enter your email"
                       required
@@ -98,7 +106,7 @@ const LoginForm = () => {
                       type="password"
                       id="password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => dispatch(setPassword(e.target.value))}
                       className="w-full outline-none text-sm md:text-base"
                       placeholder="Enter your password"
                       required
@@ -108,7 +116,7 @@ const LoginForm = () => {
 
                 <button
                   type="submit"
-                  onClick={handleSubmit}
+                  onClick={handleLogin}
                   className="w-full bg-blue-600 text-white py-3 md:py-4 rounded-lg font-medium hover:bg-blue-700 transition-all duration-300 text-sm md:text-base"
                 >
                   Login To Dashboard

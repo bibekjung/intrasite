@@ -3,11 +3,13 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 type AuthState = {
   email: string;
   password: string;
+  isAnimationComplete: boolean;
 };
 
 const initialState: AuthState = {
   email: '',
   password: '',
+  isAnimationComplete: false,
 };
 
 const authSlice = createSlice({
@@ -20,6 +22,9 @@ const authSlice = createSlice({
     setPassword: (state, action: PayloadAction<string>) => {
       state.password = action.payload;
     },
+    setIsAnimationComplete: (state, action: PayloadAction<boolean>) => {
+      state.isAnimationComplete = action.payload;
+    },
     clearAuth: (state) => {
       state.email = '';
       state.password = '';
@@ -27,5 +32,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { setEmail, setPassword, clearAuth } = authSlice.actions;
+export const { setEmail, setPassword, setIsAnimationComplete, clearAuth } =
+  authSlice.actions;
 export default authSlice.reducer;

@@ -1,23 +1,75 @@
 import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
+import Sidebar from '../components/Sidebar';
+import { User } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function MainLayout() {
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleLogout = () => {
+    alert('Logging out...');
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: any) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef?.current?.contains(event.target)
+      ) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="flex h-screen">
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Topbar */}
-        <header className="bg-white shadow p-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold">Welcome</h1>
-          <button className="bg-red-500 text-white px-3 py-1 rounded">
-            Logout
-          </button>
+        <header className="bg-white shadow p-4 flex justify-between items-center relative">
+          <h1 className="text-2xl font-semibold bg-gradient-to-r from-orange-400 to-blue-500 bg-clip-text text-transparent">
+            INTRASITE
+          </h1>
+
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="flex items-center gap-2 px-3 py-1 rounded hover:bg-gray-100 transition"
+            >
+              <User size={20} />
+              <span className="font-medium">Admin</span>
+            </button>
+
+            {isProfileOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md border border-gray-200 z-50">
+                <button
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition"
+                  onClick={() => alert('View Profile clicked')}
+                >
+                  View Profile
+                </button>
+                <button
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition"
+                  onClick={() => alert('Reset Password clicked')}
+                >
+                  Reset Password
+                </button>
+                <button
+                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </header>
 
-        {/* Routed Page */}
         <main className="flex-1 p-6 bg-gray-100 overflow-y-auto">
           <Outlet />
         </main>

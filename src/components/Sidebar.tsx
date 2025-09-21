@@ -1,41 +1,82 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { LayoutDashboard, Settings, Menu, LogOut } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { setIsOpen } from '@/slices/sidebarSlice';
 
 export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true);
+  const dispatch = useDispatch();
+  const { isOpen } = useSelector((state: RootState) => state.sidebar);
+
+  const navItems = [
+    {
+      name: 'Dashboard',
+      path: '/dashboard',
+      icon: <LayoutDashboard size={20} />,
+    },
+    { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
+  ];
 
   return (
     <div
-      className={`bg-gray-800 text-white transition-all duration-300 ${
-        isOpen ? 'w-64' : 'w-16'
-      }`}
+      className={`bg-gradient-to-b from-gray-900 to-gray-800 text-white flex flex-col justify-between 
+      transition-all duration-300 ${isOpen ? 'w-64' : 'w-32'} h-screen shadow-lg`}
     >
-      {/* Sidebar Header */}
-      <div className="flex items-center justify-between p-4">
-        <span className={`${isOpen ? 'block' : 'hidden'} font-bold`}>
-          My App
-        </span>
-        <button onClick={() => setIsOpen(!isOpen)} className="text-white">
-          {isOpen ? <X /> : <Menu />}
-        </button>
+      <div>
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <img
+            src="/kskl.png"
+            alt="Logo"
+            className={`transition-all object-contain ${isOpen ? 'h-10 w-auto' : 'h-8 w-8'}`}
+          />
+          <button
+            onClick={() => dispatch(setIsOpen(!isOpen))}
+            className="text-gray-300 hover:text-white focus:outline-none"
+          >
+            <Menu size={18} />
+          </button>
+        </div>
+
+        <nav className="mt-6 flex flex-col gap-1 px-2">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.name}
+              to={item.path}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200
+                ${
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                }`
+              }
+            >
+              {item.icon}
+              <span className={`${isOpen ? 'block' : 'hidden'}`}>
+                {item.name}
+              </span>
+            </NavLink>
+          ))}
+        </nav>
       </div>
 
-      {/* Sidebar Links */}
-      <nav className="mt-4 space-y-2">
-        <Link
-          to="/dashboard"
-          className="block px-4 py-2 hover:bg-gray-700 rounded"
+      <div className="border-t border-gray-700">
+        <button
+          onClick={() => alert('Logging out...')}
+          className="flex items-center gap-3 w-full px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white transition-all"
         >
-          Dashboard
-        </Link>
-        <Link
-          to="/settings"
-          className="block px-4 py-2 hover:bg-gray-700 rounded"
+          <LogOut size={20} />
+          <span className={`${isOpen ? 'block' : 'hidden'}`}>Logout</span>
+        </button>
+
+        <p
+          className={`text-xs text-gray-500 text-center py-2 ${
+            isOpen ? 'block' : 'hidden'
+          }`}
         >
-          Settings
-        </Link>
-      </nav>
+          © 2025 CKYC
+        </p>
+      </div>
     </div>
   );
 }
