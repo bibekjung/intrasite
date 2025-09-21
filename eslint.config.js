@@ -31,7 +31,6 @@ export default tseslint.config([
       ],
       '@typescript-eslint/no-explicit-any': 'off',
 
-      // <<< Add this to disable useEffect missing dependency warning
       'react-hooks/exhaustive-deps': 'off',
     },
   },
