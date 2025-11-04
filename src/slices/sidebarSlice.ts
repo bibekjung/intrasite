@@ -5,7 +5,7 @@ type SlidebarState = {
 };
 
 const initialState: SlidebarState = {
-  isOpen: false,
+  isOpen: true,
 };
 
 const sidebarSlice = createSlice({
