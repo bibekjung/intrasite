@@ -1,12 +1,21 @@
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Settings, Menu, LogOut } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Settings,
+  Menu,
+  LogOut,
+  IdCard,
+  NotebookPen,
+} from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { setIsOpen } from '@/slices/sidebarSlice';
+import { clearAuth } from '@/slices/authSlice';
 
 export default function Sidebar() {
   const dispatch = useDispatch();
   const { isOpen } = useSelector((state: RootState) => state.sidebar);
+  const navigate = useNavigate();
 
   const navItems = [
     {
@@ -14,24 +23,28 @@ export default function Sidebar() {
       path: '/dashboard',
       icon: <LayoutDashboard size={20} />,
     },
+    { name: 'NID Search', path: '/nid-search', icon: <IdCard size={20} /> },
+    { name: 'Directory', path: '/directory', icon: <NotebookPen size={20} /> },
     { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
   ];
 
   return (
     <div
       className={`bg-gradient-to-b from-gray-900 to-gray-800 text-white flex flex-col justify-between 
-      transition-all duration-300 ${isOpen ? 'w-64' : 'w-32'} h-screen shadow-lg`}
+      transition-all duration-300 ${isOpen ? 'w-64' : 'w-24'} h-screen shadow-lg`}
     >
       <div>
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="flex items-center justify-between p-3 border-b border-gray-700">
           <img
             src="/kskl.png"
             alt="Logo"
-            className={`transition-all object-contain ${isOpen ? 'h-10 w-auto' : 'h-8 w-8'}`}
+            className={`transition-all object-contain ${isOpen ? 'h-10 w-auto' : 'h-10 w-10'}`}
           />
           <button
             onClick={() => dispatch(setIsOpen(!isOpen))}
             className="text-gray-300 hover:text-white focus:outline-none"
+            aria-label="Toggle sidebar"
+            title="Toggle sidebar"
           >
             <Menu size={18} />
           </button>
@@ -62,7 +75,10 @@ export default function Sidebar() {
 
       <div className="border-t border-gray-700">
         <button
-          onClick={() => alert('Logging out...')}
+          onClick={() => {
+            dispatch(clearAuth());
+            navigate('/');
+          }}
           className="flex items-center gap-3 w-full px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white transition-all"
         >
           <LogOut size={20} />

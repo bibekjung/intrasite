@@ -1,14 +1,19 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { User } from 'lucide-react';
+import { User, LogOut, KeyRound } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
+import { clearAuth } from '@/slices/authSlice';
 
 export default function MainLayout() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleLogout = () => {
-    alert('Logging out...');
+    dispatch(clearAuth());
+    navigate('/');
   };
 
   useEffect(() => {
@@ -48,22 +53,31 @@ export default function MainLayout() {
             {isProfileOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md border border-gray-200 z-50">
                 <button
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition"
-                  onClick={() => alert('View Profile clicked')}
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100 transition"
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    navigate('/profile');
+                  }}
                 >
-                  View Profile
+                  <User size={18} />
+                  <span>View Profile</span>
                 </button>
                 <button
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition"
-                  onClick={() => alert('Reset Password clicked')}
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100 transition"
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    navigate('/reset-password');
+                  }}
                 >
-                  Reset Password
+                  <KeyRound size={18} />
+                  <span>Reset Password</span>
                 </button>
                 <button
-                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition"
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition"
                   onClick={handleLogout}
                 >
-                  Logout
+                  <LogOut size={18} />
+                  <span>Logout</span>
                 </button>
               </div>
             )}
