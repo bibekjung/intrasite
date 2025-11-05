@@ -54,7 +54,6 @@ export default function NIDSearch() {
         </div>
       </div>
 
-      {/* Form Card */}
       <div className="bg-white rounded-2xl shadow p-6 mb-6 border border-sky-100">
         <label className="block text-xs font-semibold text-slate-600 mb-2 tracking-wide">
           NATIONAL ID NUMBER <span className="text-red-500">*</span>
@@ -88,7 +87,6 @@ export default function NIDSearch() {
         </div>
       </div>
 
-      {/* Empty state panel */}
       <div className="bg-white rounded-2xl shadow p-10 flex items-center justify-center text-center text-slate-700">
         <div>
           <div className="w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center bg-sky-100">
@@ -103,7 +101,6 @@ export default function NIDSearch() {
         </div>
       </div>
 
-      {/* Result modal */}
       <Modal open={open} title="NID Details" onClose={() => setOpen(false)}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>

@@ -24,7 +24,6 @@ export default function LineChart({ title, points, labels }: LineChartProps) {
     <div className="bg-white rounded-lg shadow p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold">{title}</h3>
-        <span className="text-xs text-gray-400">Static sample</span>
       </div>
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-56">
         <rect
