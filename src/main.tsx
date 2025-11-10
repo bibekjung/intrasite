@@ -3,9 +3,12 @@ import './index.css';
 import App from './App';
 import { Provider } from 'react-redux';
 import { store } from './store/store';
+import { ToasterProvider } from './components/ui/toaster';
 
 createRoot(document.getElementById('root')!).render(
   <Provider store={store}>
-    <App />
+    <ToasterProvider>
+      <App />
+    </ToasterProvider>
   </Provider>,
 );

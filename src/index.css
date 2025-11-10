@@ -70,8 +70,7 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
-
-
+*/
 
 @layer base {
   :root {
@@ -129,13 +128,14 @@ button:focus-visible {
   }
 }
 
-
-
 @layer base {
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-white text-foreground;
   }
-} */
+  html {
+    @apply bg-white;
+  }
+}
