@@ -1,4 +1,24 @@
+'use client';
+
 import { useMemo, useState } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type DirectoryUser = {
   id: string;
@@ -55,6 +75,7 @@ const STATIC_USERS: DirectoryUser[] = [
 export default function UserDirectory() {
   const [department, setDepartment] = useState<string>('All');
   const [position, setPosition] = useState<string>('All');
+
   const departments = useMemo(
     () => [
       'All',
@@ -62,6 +83,7 @@ export default function UserDirectory() {
     ],
     [],
   );
+
   const positions = useMemo(
     () => ['All', ...Array.from(new Set(STATIC_USERS.map((u) => u.position)))],
     [],
@@ -74,61 +96,76 @@ export default function UserDirectory() {
   );
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">User Directory</h2>
-      <div className="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Department</label>
-          <select
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-          >
-            {departments.map((d) => (
-              <option key={d}>{d}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Position</label>
-          <select
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
-            value={position}
-            onChange={(e) => setPosition(e.target.value)}
-          >
-            {positions.map((p) => (
-              <option key={p}>{p}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold tracking-tight">User Directory</h2>
 
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-gray-500 border-b">
-              <th className="py-3 px-4">ID</th>
-              <th className="py-3 px-4">Name</th>
-              <th className="py-3 px-4">Department</th>
-              <th className="py-3 px-4">Position</th>
-              <th className="py-3 px-4">Phone</th>
-              <th className="py-3 px-4">Email</th>
-            </tr>
-          </thead>
-          <tbody className="text-gray-700">
+      {/* Filter Section */}
+      <Card className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <Label>Department</Label>
+          <Select value={department} onValueChange={setDepartment}>
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Select Department" />
+            </SelectTrigger>
+            <SelectContent>
+              {departments.map((d) => (
+                <SelectItem key={d} value={d}>
+                  {d}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>Position</Label>
+          <Select value={position} onValueChange={setPosition}>
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Select Position" />
+            </SelectTrigger>
+            <SelectContent>
+              {positions.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </Card>
+
+      {/* Table Section */}
+      <Card className="p-2">
+        <Table>
+          <TableCaption>
+            {filtered.length
+              ? 'List of employees filtered by selection.'
+              : 'No users found for selected filters.'}
+          </TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Department</TableHead>
+              <TableHead>Position</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Email</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {filtered.map((u) => (
-              <tr key={u.id} className="border-b">
-                <td className="py-2 px-4">{u.id}</td>
-                <td className="py-2 px-4">{u.name}</td>
-                <td className="py-2 px-4">{u.department}</td>
-                <td className="py-2 px-4">{u.position}</td>
-                <td className="py-2 px-4">{u.phone}</td>
-                <td className="py-2 px-4">{u.email}</td>
-              </tr>
+              <TableRow key={u.id}>
+                <TableCell className="font-medium">{u.id}</TableCell>
+                <TableCell>{u.name}</TableCell>
+                <TableCell>{u.department}</TableCell>
+                <TableCell>{u.position}</TableCell>
+                <TableCell>{u.phone}</TableCell>
+                <TableCell>{u.email}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }

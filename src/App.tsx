@@ -7,6 +7,7 @@ import ResetPassword from './pages/ResetPassword';
 import NIDSearch from './pages/NIDSearch';
 import UserDirectory from './pages/UserDirectory';
 import MainLayout from './components/MainLayout';
+import PolicyDocument from './pages/PolicyDocument';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/nid-search" element={<NIDSearch />} />
           <Route path="/directory" element={<UserDirectory />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/policies" element={<PolicyDocument />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/reset-password" element={<ResetPassword />} />
         </Route>

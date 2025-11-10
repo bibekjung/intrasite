@@ -6,6 +6,7 @@ import {
   LogOut,
   IdCard,
   NotebookPen,
+  Scale,
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -25,12 +26,13 @@ export default function Sidebar() {
     },
     { name: 'NID Search', path: '/nid-search', icon: <IdCard size={20} /> },
     { name: 'Directory', path: '/directory', icon: <NotebookPen size={20} /> },
+    { name: 'Policy Document', path: '/policies', icon: <Scale size={20} /> },
     { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
   ];
 
   return (
     <div
-      className={`bg-gradient-to-b from-gray-900 to-gray-800 text-white flex flex-col justify-between 
+      className={`bg-gradient-to-b from-gray-900 to-gray-900 text-white flex flex-col justify-between 
       transition-all duration-300 ${isOpen ? 'w-64' : 'w-24'} h-screen shadow-lg`}
     >
       <div>

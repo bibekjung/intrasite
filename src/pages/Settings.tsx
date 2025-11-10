@@ -12,7 +12,7 @@ export default function Settings() {
               </label>
               <input
                 className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                placeholder="Acme Corp"
+                placeholder="KARJA SUCHANA KENDRA"
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -111,10 +111,6 @@ export default function Settings() {
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-gray-500 mt-3">
-            Static matrix for demonstration. API integration can replace this
-            with live roles.
-          </p>
         </div>
       </div>
     </div>
