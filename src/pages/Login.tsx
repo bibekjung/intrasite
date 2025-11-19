@@ -1,33 +1,60 @@
-import {
-  setEmail,
-  setIsAnimationComplete,
-  setPassword,
-} from '@/slices/authSlice';
+import { setIsAnimationComplete } from '@/slices/authSlice';
 import { RootState } from '@/store/store';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginInputSchema, type LoginInput } from '@/api/schemas/authSchema';
+import { useLdapLogin } from '@/hooks/useLogin';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Navigate } from 'react-router-dom';
 
 const LoginForm = () => {
   const dispatch = useDispatch();
-  const { email, password, isAnimationComplete } = useSelector(
+  const { isAnimationComplete, isAuthenticated } = useSelector(
     (state: RootState) => state.auth,
   );
+  const { mutate: login, isPending } = useLdapLogin();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<Omit<LoginInput, 'portal'>>({
+    resolver: zodResolver(loginInputSchema.omit({ portal: true })),
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
       dispatch(setIsAnimationComplete(true));
     }, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [dispatch]);
 
-  const handleLogin = () => {
-    window.location.href = '/dashboard';
+  const onSubmit = (data: Omit<LoginInput, 'portal'>) => {
+    // hard code portal as 'partner'
+    const loginPayload = {
+      ...data,
+      portal: 'partner',
+    };
+    login(loginPayload);
   };
 
+  // next page after authentication
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
-    <div className=" min-h-screen bg-gray-300 flex items-center justify-center p-4">
-      <div className=" rounded-2xl shadow-lg w-full max-w-5xl min-h-[600px] overflow-hidden relative">
+    <div className="min-h-screen bg-gray-300 flex items-center justify-center p-4">
+      <div className="rounded-2xl shadow-lg w-full max-w-5xl min-h-[600px] overflow-hidden relative">
         <div
           className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center px-6 py-10 md:px-10 text-white transition-transform duration-1000 ease-in-out"
           style={{
@@ -71,56 +98,83 @@ const LoginForm = () => {
                 </p>
               </div>
 
-              <div className="space-y-6">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div>
-                  <label
+                  <Label
+                    htmlFor="username"
                     className="block text-gray-700 font-medium mb-2 text-sm md:text-base"
-                    htmlFor="email"
                   >
-                    Email Address
-                  </label>
-                  <div className="flex items-center border border-gray-300 rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-                    <Mail className="h-5 w-5 text-gray-400 mr-3" />
-                    <input
-                      type="email"
-                      id="email"
-                      value={email}
-                      onChange={(e) => dispatch(setEmail(e.target.value))}
-                      className="w-full outline-none text-sm md:text-base"
-                      placeholder="Enter your email"
-                      required
+                    Username or Email
+                  </Label>
+                  <div
+                    className={`flex items-center border rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 ${
+                      errors.username
+                        ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500'
+                        : 'border-gray-300'
+                    }`}
+                  >
+                    <Mail className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="Enter your username or email"
+                      className="border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      {...register('username')}
+                      disabled={isPending}
                     />
                   </div>
+                  {errors.username && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.username.message}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label
-                    className="block text-gray-700 font-medium mb-2 text-sm md:text-base"
+                  <Label
                     htmlFor="password"
+                    className="block text-gray-700 font-medium mb-2 text-sm md:text-base"
                   >
                     Password
-                  </label>
-                  <div className="flex items-center border border-gray-300 rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-                    <Lock className="h-5 w-5 text-gray-400 mr-3" />
-                    <input
-                      type="password"
+                  </Label>
+                  <div
+                    className={`flex items-center border rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 ${
+                      errors.password
+                        ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500'
+                        : 'border-gray-300'
+                    }`}
+                  >
+                    <Lock className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                    <Input
                       id="password"
-                      value={password}
-                      onChange={(e) => dispatch(setPassword(e.target.value))}
-                      className="w-full outline-none text-sm md:text-base"
+                      type="password"
                       placeholder="Enter your password"
-                      required
+                      className="border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      {...register('password')}
+                      disabled={isPending}
                     />
                   </div>
+                  {errors.password && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.password.message}
+                    </p>
+                  )}
                 </div>
 
-                <button
+                <Button
                   type="submit"
-                  onClick={handleLogin}
-                  className="w-full bg-blue-600 text-white py-3 md:py-4 rounded-lg font-medium hover:bg-blue-700 transition-all duration-300 text-sm md:text-base"
+                  disabled={isPending}
+                  className="w-full bg-blue-600 text-white py-3 md:py-4 rounded-lg font-medium hover:bg-blue-700 transition-all duration-300 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Login To Dashboard
-                </button>
+                  {isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Logging in...
+                    </>
+                  ) : (
+                    'Login To Dashboard'
+                  )}
+                </Button>
 
                 <div className="text-center">
                   <a
@@ -130,7 +184,7 @@ const LoginForm = () => {
                     Forgot Password?
                   </a>
                 </div>
-              </div>
+              </form>
 
               <div className="mt-8 text-center">
                 <p className="text-xs md:text-sm text-gray-500 mb-2">

@@ -2,14 +2,16 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { User, LogOut, KeyRound } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { clearAuth } from '@/slices/authSlice';
+import { RootState } from '@/store/store';
 
 export default function MainLayout() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const handleLogout = () => {
     dispatch(clearAuth());
@@ -47,7 +49,7 @@ export default function MainLayout() {
               className="flex items-center gap-2 px-3 py-1 rounded hover:bg-gray-100 transition"
             >
               <User size={20} />
-              <span className="font-medium">Admin</span>
+              <span className="font-medium">{user?.name || 'User'}</span>
             </button>
 
             {isProfileOpen && (

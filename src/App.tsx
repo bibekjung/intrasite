@@ -8,6 +8,7 @@ import NIDSearch from './pages/NIDSearch';
 import UserDirectory from './pages/UserDirectory';
 import MainLayout from './components/MainLayout';
 import PolicyDocument from './pages/PolicyDocument';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -17,14 +18,16 @@ function App() {
         <Route path="/" element={<Login />} />
 
         {/* Protected Routes with Layout */}
-        <Route element={<MainLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/nid-search" element={<NIDSearch />} />
-          <Route path="/directory" element={<UserDirectory />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/policies" element={<PolicyDocument />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<MainLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/nid-search" element={<NIDSearch />} />
+            <Route path="/directory" element={<UserDirectory />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/policies" element={<PolicyDocument />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
