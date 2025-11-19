@@ -6,11 +6,10 @@ import { useToast } from '@/components/ui/toaster';
 import { Shield, AlertTriangle, FileText, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { discoverPdfs } from '@/utils/pdfList';
+import { useNavigate } from 'react-router-dom';
 
-// Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
-// Constants
 const SECURITY_STYLE_ID = 'policy-document-security-styles';
 const DEFAULT_PDF = '/SCM Technical Specifications v1.0.0.pdf';
 const DEVTOOLS_THRESHOLD = 160;
@@ -23,7 +22,6 @@ const OVERLAY_OPACITY = 0.02;
 const OVERLAY_INIT_DELAY = 100;
 const OVERLAY_RETRY_DELAY = 50;
 
-// Z-index constants
 const Z_INDEX = {
   OVERLAY_1: 999997,
   OVERLAY_2: 999996,
@@ -35,7 +33,6 @@ const Z_INDEX = {
   WARNING: 1000000,
 } as const;
 
-// Blocked keyboard shortcuts
 const BLOCKED_KEYS = [
   'c',
   'C',
@@ -70,6 +67,7 @@ const PolicyDocument: React.FC = () => {
     null,
   );
   const screenshotDetectedRef = useRef<boolean>(false);
+  const navigate = useNavigate();
 
   const { toast } = useToast();
 
@@ -88,7 +86,6 @@ const PolicyDocument: React.FC = () => {
     [toast],
   );
 
-  // Load PDFs once on mount
   useEffect(() => {
     if (pdfsLoadedRef.current) return;
 
@@ -117,17 +114,16 @@ const PolicyDocument: React.FC = () => {
         securityStyle.parentNode.removeChild(securityStyle);
       }
     } catch (_error) {
-      return _error; // Ignore cleanup errors
+      return _error;
     }
   }, []);
 
-  const handleBackToGallery = () => {
-    removeSecurityStyles();
-    setShowGallery(true);
-    setSelectedPdf(null);
-  };
+  // const handleBackToGallery = () => {
+  //   removeSecurityStyles();
+  //   setShowGallery(true);
+  //   setSelectedPdf(null);
+  // };
 
-  // Security: Block copy, cut, select, and keyboard shortcuts
   useEffect(() => {
     if (showGallery) return;
 
@@ -173,42 +169,36 @@ const PolicyDocument: React.FC = () => {
       const isModifier = e.ctrlKey || e.metaKey;
       const key = e.key;
 
-      // Block Ctrl/Cmd + blocked keys
       if (isModifier && isBlockedKey(key)) {
         e.preventDefault();
         showWarning('This keyboard shortcut is disabled.');
         return false;
       }
 
-      // Block F12
       if (key === 'F12') {
         e.preventDefault();
         showWarning('Developer tools access is restricted.');
         return false;
       }
 
-      // Block Ctrl/Cmd + Shift + DevTools keys
       if (isModifier && e.shiftKey && isDevToolsKey(key)) {
         e.preventDefault();
         showWarning('Developer tools access is restricted.');
         return false;
       }
 
-      // Block Ctrl/Cmd + U (View Source)
       if (isModifier && (key === 'u' || key === 'U')) {
         e.preventDefault();
         showWarning('View source is disabled.');
         return false;
       }
 
-      // Block PrintScreen
       if (key === 'PrintScreen') {
         e.preventDefault();
         showWarning('Screenshots are not allowed.');
         return false;
       }
 
-      // Block Shift + S (Snipping Tool detection)
       if (
         e.shiftKey &&
         (key === 'S' || key === 's') &&
@@ -249,7 +239,6 @@ const PolicyDocument: React.FC = () => {
       }
     };
 
-    // Console detection
     const devtools = { open: false };
     const element = new Image();
     Object.defineProperty(element, 'id', {
@@ -300,14 +289,12 @@ const PolicyDocument: React.FC = () => {
     };
   }, [showWarning, showGallery]);
 
-  // Cleanup security styles when switching to gallery
   useEffect(() => {
     if (showGallery) {
       removeSecurityStyles();
     }
   }, [showGallery, removeSecurityStyles]);
 
-  // Security: CSS styles and screenshot protection
   useEffect(() => {
     if (showGallery) return;
 
@@ -528,7 +515,7 @@ const PolicyDocument: React.FC = () => {
           }
           styleRef.current = null;
         } catch (error) {
-          return error; // Style element may have already been removed
+          return error;
         }
       });
 
@@ -597,7 +584,6 @@ const PolicyDocument: React.FC = () => {
       </div>
     );
   }
-
   return (
     <>
       <div className="screenshot-protection-overlay" />
@@ -617,11 +603,11 @@ const PolicyDocument: React.FC = () => {
         }}
       >
         <button
-          onClick={handleBackToGallery}
+          onClick={() => navigate(-1)}
           className="absolute top-4 left-4 z-50 flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 transition pointer-events-auto"
-          style={{ zIndex: Z_INDEX.BUTTON }}
         >
           <ArrowLeft className="h-4 w-4" />
+          <span>Back</span>
         </button>
 
         <div

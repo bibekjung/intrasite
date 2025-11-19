@@ -31,17 +31,25 @@ export default function Sidebar() {
   ];
 
   return (
+    // <div
+    //   className={`bg-gradient-to-b from-gray-900 to-gray-900 text-white flex flex-col justify-between
+    //   transition-all duration-300 ${isOpen ? 'w-64' : 'w-24'} h-screen shadow-lg`}
+    // >
+
     <div
-      className={`bg-gradient-to-b from-gray-900 to-gray-900 text-white flex flex-col justify-between 
-      transition-all duration-300 ${isOpen ? 'w-64' : 'w-24'} h-screen shadow-lg`}
+      className={`bg-[#283A47] text-white flex flex-col justify-between 
+  transition-all duration-300 ${isOpen ? 'w-64' : 'w-24'} h-screen shadow-lg`}
     >
       <div>
         <div className="flex items-center justify-between p-3 border-b border-gray-700">
           <img
-            src="/kskl.png"
+            src={isOpen ? '/kskl.png' : '/logo.png'}
             alt="Logo"
-            className={`transition-all object-contain ${isOpen ? 'h-10 w-auto' : 'h-10 w-10'}`}
+            className={`object-contain transition-all duration-300 ${
+              isOpen ? 'h-10 w-auto' : 'h-10 w-10 mx-auto'
+            }`}
           />
+
           <button
             onClick={() => dispatch(setIsOpen(!isOpen))}
             className="text-gray-300 hover:text-white focus:outline-none"
@@ -51,6 +59,28 @@ export default function Sidebar() {
             <Menu size={18} />
           </button>
         </div>
+
+        {/* <div className="flex items-center justify-between p-3 border-b border-gray-700">
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className={`transition-all object-contain ${isOpen ? 'h-10 w-auto' : 'h-10 w-10'}`}
+          />
+          {isOpen && (
+            <span className="text-sm font-semibold truncate max-w-[13rem]">
+              कर्जा सूचना केन्द्र लिमिटेड
+            </span>
+          )}
+
+          <button
+            onClick={() => dispatch(setIsOpen(!isOpen))}
+            className="text-gray-300 hover:text-white focus:outline-none"
+            aria-label="Toggle sidebar"
+            title="Toggle sidebar"
+          >
+            <Menu size={18} />
+          </button>
+        </div> */}
 
         <nav className="mt-6 flex flex-col gap-1 px-2">
           {navItems.map((item) => (
