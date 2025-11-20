@@ -4,8 +4,7 @@ import { Mail, Lock, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { loginInputSchema, type LoginInput } from '@/api/schemas/authSchema';
+import { type LoginInput } from '@/api/schemas/authSchema';
 import { useLdapLogin } from '@/hooks/useLogin';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,12 +18,7 @@ const LoginForm = () => {
   );
   const { mutate: login, isPending } = useLdapLogin();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<Omit<LoginInput, 'portal'>>({
-    resolver: zodResolver(loginInputSchema.omit({ portal: true })),
+  const { register, handleSubmit } = useForm<Omit<LoginInput, 'portal'>>({
     defaultValues: {
       username: '',
       password: '',
@@ -106,13 +100,7 @@ const LoginForm = () => {
                   >
                     Username or Email
                   </Label>
-                  <div
-                    className={`flex items-center border rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 ${
-                      errors.username
-                        ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500'
-                        : 'border-gray-300'
-                    }`}
-                  >
+                  <div className="flex items-center border rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 border-gray-300">
                     <Mail className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
                     <Input
                       id="username"
@@ -123,11 +111,6 @@ const LoginForm = () => {
                       disabled={isPending}
                     />
                   </div>
-                  {errors.username && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.username.message}
-                    </p>
-                  )}
                 </div>
 
                 <div>
@@ -137,13 +120,7 @@ const LoginForm = () => {
                   >
                     Password
                   </Label>
-                  <div
-                    className={`flex items-center border rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 ${
-                      errors.password
-                        ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500'
-                        : 'border-gray-300'
-                    }`}
-                  >
+                  <div className="flex items-center border rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 border-gray-300">
                     <Lock className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
                     <Input
                       id="password"
@@ -154,11 +131,6 @@ const LoginForm = () => {
                       disabled={isPending}
                     />
                   </div>
-                  {errors.password && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.password.message}
-                    </p>
-                  )}
                 </div>
 
                 <Button

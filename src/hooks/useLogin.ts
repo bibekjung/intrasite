@@ -14,9 +14,7 @@ export const useLdapLogin = () => {
   return useMutation<LoginResponse, Error, LoginInput>({
     mutationFn: loginLdap,
     onSuccess: (data) => {
-      // Extract token from access_token object
       const token = data.access_token.accessToken;
-
       if (!token) {
         throw new Error('Token not found in login response');
       }
@@ -43,9 +41,11 @@ export const useLdapLogin = () => {
       navigate('/dashboard');
     },
     onError: (error) => {
+      const errorMessage =
+        error.message || 'Invalid credentials. Please try again.';
       toast({
         title: 'Login failed',
-        description: error.message || 'Invalid credentials. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     },

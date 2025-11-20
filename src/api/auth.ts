@@ -1,21 +1,39 @@
 import axios from 'axios';
 import { type LoginInput, type LoginResponse } from './schemas/authSchema';
 
-const API_BASE = 'http://10.0.130.163:81/api';
+const API_BASE = import.meta.env.DEV ? '/api' : 'http://10.0.130.163:8000/api';
 
 export const apiClient = axios.create({
   baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
+    Accept: 'application/json',
   },
+  timeout: 30000, // 30 seconds timeout is set
 });
 
 apiClient.interceptors.request.use(
   (config) => {
+    if (!config.headers) {
+      config.headers = {} as any;
+    }
+
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    if (
+      config.data &&
+      (config.method === 'post' ||
+        config.method === 'put' ||
+        config.method === 'patch')
+    ) {
+      if (!config.headers['Content-Type']) {
+        config.headers['Content-Type'] = 'application/json';
+      }
+    }
+
     return config;
   },
   (error) => {
@@ -40,9 +58,21 @@ export const loginLdap = async (
   credentials: LoginInput,
 ): Promise<LoginResponse> => {
   try {
-    const response = await apiClient.post('/ldap-login', credentials);
+    const response = await apiClient.post('/ldap-login', credentials, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-    const data = response.data;
+    let data = response.data;
+
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch (e: any) {
+        throw new Error('Invalid response format from server', e);
+      }
+    }
 
     let accessToken = '';
     let accessTokenId = '';
@@ -122,11 +152,64 @@ export const loginLdap = async (
 
     return loginResponse;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message ||
-        error.message ||
-        'An error occurred during login',
-    );
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      throw new Error(
+        'Connection timeout. Please check your network connection and try again.',
+      );
+    }
+
+    if (
+      error.code === 'ERR_NETWORK' ||
+      error.code === 'ERR_CONNECTION_REFUSED' ||
+      error.code === 'ERR_CONNECTION_TIMED_OUT'
+    ) {
+      throw new Error(
+        'Unable to connect to the server. Please check your network connection and try again.',
+      );
+    }
+
+    if (error.response) {
+      const status = error.response.status;
+      let errorMessage = 'An error occurred during login';
+
+      if (error.response.data) {
+        if (
+          typeof error.response.data === 'string' &&
+          error.response.data.trim()
+        ) {
+          errorMessage = error.response.data;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        }
+      }
+
+      // Provide default messages for common status codes
+      if (status === 401) {
+        errorMessage =
+          'Invalid credentials. Please check your username and password.';
+      } else if (status === 403) {
+        errorMessage = 'Access forbidden. Please contact your administrator.';
+      } else if (status === 500) {
+        errorMessage = errorMessage || 'Server error. Please try again later.';
+      } else if (status >= 400 && status < 500) {
+        errorMessage =
+          errorMessage || `Client error (${status}). Please check your input.`;
+      } else if (status >= 500) {
+        errorMessage =
+          errorMessage || `Server error (${status}). Please try again later.`;
+      } else {
+        errorMessage =
+          errorMessage ||
+          `Error ${status}: ${error.response.statusText || 'Unknown error'}`;
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    const errorMessage = error.message || 'An error occurred during login';
+    throw new Error(errorMessage);
   }
 };
 

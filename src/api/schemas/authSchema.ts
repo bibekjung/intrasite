@@ -1,32 +1,9 @@
-import { z } from 'zod';
+export type LoginInput = {
+  username: string;
+  password: string;
+  portal: string;
+};
 
-export const loginInputSchema = z.object({
-  username: z
-    .string()
-    .min(1, 'Username or email is required')
-    .refine(
-      (val) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(val) || val.length >= 3;
-      },
-      { message: 'Please enter a valid username or email address' },
-    ),
-  password: z
-    .string()
-    .min(6, 'Password must be at least 6 characters')
-    .max(100, 'Password is too long'),
-  portal: z
-    .string()
-    .min(1, 'Portal is required')
-    .transform((val) => val.trim()),
-});
-
-// Response type definition (no strict validation - we extract data manually)
-export const loginResponseSchema = z.any(); // Just for type inference, not for validation
-
-export type LoginInput = z.infer<typeof loginInputSchema>;
-
-// Define LoginResponse type manually since we're not using strict Zod validation
 export type LoginResponse = {
   message?: string;
   user: {

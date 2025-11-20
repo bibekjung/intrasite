@@ -13,7 +13,19 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
     },
     mutations: {
-      retry: 1,
+      retry: (failureCount, error: any) => {
+        if (
+          error?.code === 'ERR_NETWORK' ||
+          error?.code === 'ERR_CONNECTION_REFUSED' ||
+          error?.code === 'ERR_CONNECTION_TIMED_OUT' ||
+          error?.code === 'ECONNABORTED' ||
+          error?.message?.includes('timeout') ||
+          error?.message?.includes('network')
+        ) {
+          return false;
+        }
+        return failureCount < 1;
+      },
     },
   },
 });
