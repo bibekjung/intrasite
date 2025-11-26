@@ -1,22 +1,18 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { User, LogOut, KeyRound } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { clearAuth } from '@/slices/authSlice';
+import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { useLogout } from '@/hooks/useLogout';
+import { useNavigate } from 'react-router-dom';
 
 export default function MainLayout() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-
-  const handleLogout = () => {
-    dispatch(clearAuth());
-    navigate('/');
-  };
+  const { handleLogout } = useLogout();
 
   useEffect(() => {
     const handleClickOutside = (event: any) => {

@@ -113,11 +113,14 @@ apiClient.interceptors.request.use(
       config.headers = {} as any;
     }
 
-    // Skip token refresh for login and refresh token endpoints
-    const isAuthEndpoint =
-      config.url?.includes(API_ENDPOINTS.AUTH.LOGIN) ||
+    // Skip token refresh for login, logout, and refresh token endpoints
+    const isLoginEndpoint = config.url?.includes(API_ENDPOINTS.AUTH.LOGIN);
+    const isLogoutEndpoint = config.url?.includes(API_ENDPOINTS.AUTH.LOGOUT);
+    const isRefreshTokenEndpoint =
       config.url?.includes(API_ENDPOINTS.AUTH.REFRESH_TOKEN) ||
       config.url?.includes('refresh-token');
+    const isAuthEndpoint =
+      isLoginEndpoint || isLogoutEndpoint || isRefreshTokenEndpoint;
 
     if (!isAuthEndpoint) {
       // Proactively refresh token if needed before making the request
@@ -125,15 +128,17 @@ apiClient.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
-    } else if (config.url?.includes(API_ENDPOINTS.AUTH.LOGIN)) {
+    } else if (isLoginEndpoint) {
       // For login endpoint, don't add Authorization header
-      // (refresh token endpoint also doesn't need it - uses refresh_token in body)
-    } else {
-      // For other auth endpoints, use existing token if available
+    } else if (isLogoutEndpoint) {
+      // For logout endpoint, use existing token if available (don't refresh)
+      // This allows backend to invalidate the token even if it's expired
       const token = getAccessToken();
-      if (token && !isAccessTokenExpired()) {
+      if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+    } else if (isRefreshTokenEndpoint) {
+      // For refresh token endpoint, don't add Authorization header (uses refresh_token in body)
     }
 
     if (
@@ -628,6 +633,33 @@ export const refreshAccessToken = async (
     const errorMessage =
       error.message || 'An error occurred during token refresh';
     throw new Error(errorMessage);
+  }
+};
+
+/**
+ * Logout user - destroys session on backend
+ */
+export const logout = async (): Promise<void> => {
+  try {
+    // Call backend logout endpoint to destroy session
+    await apiClient.post(
+      API_ENDPOINTS.AUTH.LOGOUT,
+      {},
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  } catch (error: any) {
+    // Even if logout API call fails, we should still clear frontend state
+    // Log the error but don't throw - we want to proceed with frontend cleanup
+    // eslint-disable-next-line no-console
+    console.warn(
+      'Backend logout failed, but proceeding with frontend cleanup:',
+      error,
+    );
+    // Don't throw - we'll still clear frontend state regardless
   }
 };
 

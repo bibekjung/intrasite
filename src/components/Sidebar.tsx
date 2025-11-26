@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   Settings,
@@ -11,12 +11,12 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { setIsOpen } from '@/slices/sidebarSlice';
-import { clearAuth } from '@/slices/authSlice';
+import { useLogout } from '@/hooks/useLogout';
 
 export default function Sidebar() {
   const dispatch = useDispatch();
   const { isOpen } = useSelector((state: RootState) => state.sidebar);
-  const navigate = useNavigate();
+  const { handleLogout } = useLogout();
 
   const navItems = [
     {
@@ -107,10 +107,7 @@ export default function Sidebar() {
 
       <div className="border-t border-gray-700">
         <button
-          onClick={() => {
-            dispatch(clearAuth());
-            navigate('/');
-          }}
+          onClick={handleLogout}
           className="flex items-center gap-3 w-full px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white transition-all"
         >
           <LogOut size={20} />
