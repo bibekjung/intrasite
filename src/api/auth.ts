@@ -1,10 +1,24 @@
-import axios from 'axios';
-import { type LoginInput, type LoginResponse } from './schemas/authSchema';
-
-const API_BASE = import.meta.env.DEV ? '/api' : 'http://10.0.130.163:8000/api';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import {
+  type LoginInput,
+  type LoginResponse,
+  type RefreshTokenInput,
+  type RefreshTokenResponse,
+} from './schemas/authSchema';
+import {
+  getAccessToken,
+  getRefreshToken,
+  setAccessToken,
+  setRefreshToken,
+  clearTokens,
+  isAccessTokenExpired,
+} from '@/utils/tokenStorage';
+import { store } from '@/store/store';
+import { updateTokens, clearAuth } from '@/slices/authSlice';
+import { API_BASE_URL, API_ENDPOINTS } from '@/config/apiConfig';
 
 export const apiClient = axios.create({
-  baseURL: API_BASE,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -12,15 +26,114 @@ export const apiClient = axios.create({
   timeout: 30000, // 30 seconds timeout is set
 });
 
+// Flag to prevent multiple simultaneous refresh requests
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (error?: any) => void;
+}> = [];
+
+const processQueue = (error: Error | null, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+/**
+ * Proactively refresh access token if it's expired or about to expire
+ * This function is called before API requests to ensure we always have a valid token
+ */
+const refreshTokenIfNeeded = async (): Promise<string | null> => {
+  // If already refreshing, wait for that to complete
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => {
+      failedQueue.push({ resolve, reject });
+    });
+  }
+
+  // Check if token is expired or about to expire (with 10 second buffer)
+  if (!isAccessTokenExpired(10)) {
+    return getAccessToken();
+  }
+
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    // No refresh token available, logout user
+    store.dispatch(clearAuth());
+    clearTokens();
+    window.location.href = '/';
+    return null;
+  }
+
+  isRefreshing = true;
+
+  try {
+    const newTokens = await refreshAccessToken(refreshToken);
+    const newAccessToken = newTokens.access_token.accessToken;
+    const expiresIn = newTokens.access_token.expiresIn || 60;
+
+    setAccessToken(newAccessToken, expiresIn);
+
+    if (newTokens.refresh_token) {
+      setRefreshToken(newTokens.refresh_token);
+    }
+
+    // Update Redux store with new tokens
+    store.dispatch(
+      updateTokens({
+        token: newAccessToken,
+        refreshToken: newTokens.refresh_token,
+        expiresIn: expiresIn,
+      }),
+    );
+
+    processQueue(null, newAccessToken);
+    isRefreshing = false;
+
+    return newAccessToken;
+  } catch (refreshError) {
+    // Refresh failed, logout user
+    store.dispatch(clearAuth());
+    clearTokens();
+    processQueue(refreshError as Error, null);
+    isRefreshing = false;
+    window.location.href = '/';
+    return null;
+  }
+};
+
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
     if (!config.headers) {
       config.headers = {} as any;
     }
 
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Skip token refresh for login and refresh token endpoints
+    const isAuthEndpoint =
+      config.url?.includes(API_ENDPOINTS.AUTH.LOGIN) ||
+      config.url?.includes(API_ENDPOINTS.AUTH.REFRESH_TOKEN) ||
+      config.url?.includes('refresh-token');
+
+    if (!isAuthEndpoint) {
+      // Proactively refresh token if needed before making the request
+      const token = await refreshTokenIfNeeded();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } else if (config.url?.includes(API_ENDPOINTS.AUTH.LOGIN)) {
+      // For login endpoint, don't add Authorization header
+      // (refresh token endpoint also doesn't need it - uses refresh_token in body)
+    } else {
+      // For other auth endpoints, use existing token if available
+      const token = getAccessToken();
+      if (token && !isAccessTokenExpired()) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
 
     if (
@@ -43,13 +156,82 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
-      localStorage.removeItem('auth_full_response');
-      window.location.href = '/';
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
+    // If error is 401 and we haven't tried to refresh yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            return apiClient(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = getRefreshToken();
+
+      if (!refreshToken) {
+        // No refresh token, logout user
+        store.dispatch(clearAuth());
+        clearTokens();
+        processQueue(new Error('No refresh token available'), null);
+        window.location.href = '/';
+        return Promise.reject(error);
+      }
+
+      try {
+        const newTokens = await refreshAccessToken(refreshToken);
+        const newAccessToken = newTokens.access_token.accessToken;
+
+        setAccessToken(newAccessToken, newTokens.access_token.expiresIn || 60);
+
+        if (newTokens.refresh_token) {
+          setRefreshToken(newTokens.refresh_token);
+        }
+
+        // Update Redux store with new tokens
+        store.dispatch(
+          updateTokens({
+            token: newAccessToken,
+            refreshToken: newTokens.refresh_token,
+            expiresIn: newTokens.access_token.expiresIn,
+          }),
+        );
+
+        processQueue(null, newAccessToken);
+
+        // Retry original request with new token
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        }
+
+        isRefreshing = false;
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed, logout user
+        store.dispatch(clearAuth());
+        clearTokens();
+        processQueue(refreshError as Error, null);
+        isRefreshing = false;
+        window.location.href = '/';
+        return Promise.reject(refreshError);
+      }
     }
+
     return Promise.reject(error);
   },
 );
@@ -58,14 +240,28 @@ export const loginLdap = async (
   credentials: LoginInput,
 ): Promise<LoginResponse> => {
   try {
-    const response = await apiClient.post('/ldap-login', credentials, {
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await apiClient.post(
+      API_ENDPOINTS.AUTH.LOGIN,
+      credentials,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
       },
-    });
+    );
 
+    // Handle different response structures
+    // Response structure: { error: false, message: "...", data: { refresh_token: "...", ... } }
+    // axios automatically parses JSON, so response.data is the parsed object
     let data = response.data;
 
+    // If response has a nested 'data' property, use that (common API pattern)
+    // This handles: { error: false, data: {...} } -> extract {...}
+    if (data && typeof data === 'object' && 'data' in data && data.data) {
+      data = data.data;
+    }
+
+    // Handle string responses (shouldn't happen with JSON, but just in case)
     if (typeof data === 'string') {
       try {
         data = JSON.parse(data);
@@ -74,24 +270,42 @@ export const loginLdap = async (
       }
     }
 
+    // Ensure data is an object at this point
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format: expected object');
+    }
+
     let accessToken = '';
-    let accessTokenId = '';
+    const accessTokenId = '';
     let tokenType = 'Bearer';
     let expiresIn = 3600;
+
+    // Extract expires_in from response (can be at root level or nested)
+    if (data.expires_in !== undefined) {
+      expiresIn =
+        typeof data.expires_in === 'number'
+          ? data.expires_in
+          : typeof data.expires_in === 'string'
+            ? parseInt(data.expires_in) || 60
+            : 60;
+    }
 
     if (data.access_token) {
       if (typeof data.access_token === 'string') {
         accessToken = data.access_token;
-      } else if (data.access_token.accessToken) {
-        accessToken = data.access_token.accessToken;
-        accessTokenId = data.access_token.accessTokenId || '';
-        tokenType = data.access_token.tokenType || 'Bearer';
-        expiresIn =
-          typeof data.access_token.expiresIn === 'number'
-            ? data.access_token.expiresIn
-            : typeof data.access_token.expiresIn === 'string'
-              ? parseInt(data.access_token.expiresIn) || 3600
-              : 3600;
+      } else if (data.access_token) {
+        accessToken = data.access_token;
+        // accessTokenId = data.access_token.accessTokenId || '';
+        tokenType = data.tokenType || 'Bearer';
+        // Use expires_in from nested access_token if available, otherwise use root level
+        if (data.access_token.expiresIn !== undefined) {
+          expiresIn =
+            typeof data.access_token.expiresIn === 'number'
+              ? data.access_token.expiresIn
+              : typeof data.access_token.expiresIn === 'string'
+                ? parseInt(data.access_token.expiresIn) || expiresIn
+                : expiresIn;
+        }
       }
     } else if (data.token) {
       accessToken = data.token;
@@ -115,6 +329,59 @@ export const loginLdap = async (
       throw new Error(
         'Required user fields (name, username) not found in response',
       );
+    }
+
+    // Extract refresh_token explicitly - check multiple possible locations
+    // Priority: data.refresh_token (snake_case) > data.refreshToken (camelCase) > response.data.data.refresh_token
+    let refreshToken: string | undefined = undefined;
+
+    // First, try to get from the extracted data object
+    if (data.refresh_token) {
+      if (
+        typeof data.refresh_token === 'string' &&
+        data.refresh_token.trim().length > 0
+      ) {
+        refreshToken = data.refresh_token.trim();
+      }
+    } else if (data.refreshToken) {
+      if (
+        typeof data.refreshToken === 'string' &&
+        data.refreshToken.trim().length > 0
+      ) {
+        refreshToken = data.refreshToken.trim();
+      }
+    }
+
+    // If not found in data, check the original response structure
+    // This handles cases where the response structure might be different
+    if (!refreshToken && response.data) {
+      const originalData = response.data;
+      // Check if refresh_token is at the root level of response.data
+      if (
+        originalData.refresh_token &&
+        typeof originalData.refresh_token === 'string'
+      ) {
+        refreshToken = originalData.refresh_token.trim();
+      } else if (
+        originalData.refreshToken &&
+        typeof originalData.refreshToken === 'string'
+      ) {
+        refreshToken = originalData.refreshToken.trim();
+      }
+      // Also check if it's nested in response.data.data (in case our extraction missed it)
+      else if (originalData.data) {
+        if (
+          originalData.data.refresh_token &&
+          typeof originalData.data.refresh_token === 'string'
+        ) {
+          refreshToken = originalData.data.refresh_token.trim();
+        } else if (
+          originalData.data.refreshToken &&
+          typeof originalData.data.refreshToken === 'string'
+        ) {
+          refreshToken = originalData.data.refreshToken.trim();
+        }
+      }
     }
 
     const loginResponse: LoginResponse = {
@@ -147,6 +414,7 @@ export const loginLdap = async (
         expiresIn: expiresIn,
         accessToken: accessToken,
       },
+      refresh_token: refreshToken,
       token_type: data.token_type || tokenType,
     };
 
@@ -213,7 +481,157 @@ export const loginLdap = async (
   }
 };
 
+/**
+ * Refresh access token using refresh token
+ */
+export const refreshAccessToken = async (
+  refreshToken: string,
+): Promise<RefreshTokenResponse> => {
+  try {
+    const response = await apiClient.post<RefreshTokenResponse>(
+      API_ENDPOINTS.AUTH.REFRESH_TOKEN,
+      { refresh_token: refreshToken } as RefreshTokenInput,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Don't retry refresh token requests
+        _retry: true,
+      } as any,
+    );
+
+    let data = response.data;
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch (e: any) {
+        throw new Error('Invalid response format from server', e);
+      }
+    }
+
+    let accessToken = '';
+    let accessTokenId = '';
+    let tokenType = 'Bearer';
+    let expiresIn = 60; // Default to 60 seconds
+    let newRefreshToken: string | undefined = undefined;
+
+    // Type assertion for response data that might have additional properties
+    const responseData = data as RefreshTokenResponse & {
+      expires_in?: number | string;
+      token?: string;
+      accessToken?: string;
+      tokenType?: string;
+    };
+
+    // Extract expires_in from response (can be at root level or nested)
+    if (responseData.expires_in !== undefined) {
+      expiresIn =
+        typeof responseData.expires_in === 'number'
+          ? responseData.expires_in
+          : typeof responseData.expires_in === 'string'
+            ? parseInt(responseData.expires_in) || 60
+            : 60;
+    }
+
+    if (responseData.access_token) {
+      if (typeof responseData.access_token === 'string') {
+        accessToken = responseData.access_token;
+      } else if (responseData.access_token.accessToken) {
+        accessToken = responseData.access_token.accessToken;
+        accessTokenId = responseData.access_token.accessTokenId || '';
+        tokenType =
+          responseData.token_type || responseData.tokenType || 'Bearer';
+        // Use expires_in from nested access_token if available, otherwise use root level
+        if (responseData.access_token.expiresIn !== undefined) {
+          expiresIn =
+            typeof responseData.access_token.expiresIn === 'number'
+              ? responseData.access_token.expiresIn
+              : typeof responseData.access_token.expiresIn === 'string'
+                ? parseInt(responseData.access_token.expiresIn) || expiresIn
+                : expiresIn;
+        }
+      }
+    } else if (responseData.token) {
+      accessToken = responseData.token;
+    } else if (responseData.accessToken) {
+      accessToken = responseData.accessToken;
+    }
+
+    if (responseData.refresh_token) {
+      newRefreshToken = responseData.refresh_token;
+    } else if ((data as any).refreshToken) {
+      newRefreshToken = (data as any).refreshToken;
+    }
+
+    if (!accessToken) {
+      throw new Error(
+        'Access token not found in refresh response. Response: ' +
+          JSON.stringify(data),
+      );
+    }
+
+    return {
+      access_token: {
+        accessTokenId: accessTokenId,
+        tokenType: tokenType,
+        expiresIn: expiresIn,
+        accessToken: accessToken,
+      },
+      refresh_token: newRefreshToken,
+      token_type: responseData.token_type || tokenType,
+    };
+  } catch (error: any) {
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      throw new Error(
+        'Connection timeout. Please check your network connection and try again.',
+      );
+    }
+
+    if (
+      error.code === 'ERR_NETWORK' ||
+      error.code === 'ERR_CONNECTION_REFUSED' ||
+      error.code === 'ERR_CONNECTION_TIMED_OUT'
+    ) {
+      throw new Error(
+        'Unable to connect to the server. Please check your network connection and try again.',
+      );
+    }
+
+    if (error.response) {
+      const status = error.response.status;
+      let errorMessage = 'An error occurred during token refresh';
+
+      if (error.response.data) {
+        if (
+          typeof error.response.data === 'string' &&
+          error.response.data.trim()
+        ) {
+          errorMessage = error.response.data;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        }
+      }
+
+      if (status === 401) {
+        errorMessage = 'Refresh token expired. Please login again.';
+      } else if (status === 403) {
+        errorMessage = 'Refresh token invalid. Please login again.';
+      } else if (status === 500) {
+        errorMessage = errorMessage || 'Server error. Please try again later.';
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    const errorMessage =
+      error.message || 'An error occurred during token refresh';
+    throw new Error(errorMessage);
+  }
+};
+
 export const fetchUserData = async () => {
-  const response = await apiClient.get('/user');
+  const response = await apiClient.get(API_ENDPOINTS.USER.PROFILE);
   return response.data;
 };

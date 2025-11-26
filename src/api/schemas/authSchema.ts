@@ -29,5 +29,21 @@ export type LoginResponse = {
     expiresIn?: number;
     accessToken: string;
   };
+  refresh_token?: string;
+  token_type?: string;
+};
+
+export type RefreshTokenInput = {
+  refresh_token: string;
+};
+
+export type RefreshTokenResponse = {
+  access_token: {
+    accessTokenId?: string;
+    tokenType?: string;
+    expiresIn?: number;
+    accessToken: string;
+  };
+  refresh_token?: string;
   token_type?: string;
 };

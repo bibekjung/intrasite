@@ -1,4 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import {
+  getAccessToken,
+  getRefreshToken,
+  setAccessToken,
+  setRefreshToken,
+  clearTokens,
+} from '@/utils/tokenStorage';
 
 type User = {
   id: string;
@@ -9,15 +16,17 @@ type User = {
 
 type AuthState = {
   token: string | null;
+  refreshToken: string | null;
   user: User | null;
   fullResponse: any | null;
   isAuthenticated: boolean;
   isAnimationComplete: boolean;
 };
 
-// Load initial state from localStorage
+// Load initial state from secure token storage
 const getInitialState = (): AuthState => {
-  const token = localStorage.getItem('auth_token');
+  const token = getAccessToken();
+  const refreshToken = getRefreshToken();
   const userStr = localStorage.getItem('auth_user');
   const user = userStr ? JSON.parse(userStr) : null;
   const fullResponseStr = localStorage.getItem('auth_full_response');
@@ -25,6 +34,7 @@ const getInitialState = (): AuthState => {
 
   return {
     token,
+    refreshToken,
     user,
     fullResponse,
     isAuthenticated: !!token && !!user,
@@ -40,14 +50,27 @@ const authSlice = createSlice({
   reducers: {
     setCredentials: (
       state,
-      action: PayloadAction<{ token: string; user: User; fullResponse?: any }>,
+      action: PayloadAction<{
+        token: string;
+        refreshToken?: string;
+        user: User;
+        fullResponse?: any;
+        expiresIn?: number;
+      }>,
     ) => {
       state.token = action.payload.token;
+      state.refreshToken = action.payload.refreshToken || null;
       state.user = action.payload.user;
       state.fullResponse = action.payload.fullResponse || null;
       state.isAuthenticated = true;
-      // Persist to localStorage
-      localStorage.setItem('auth_token', action.payload.token);
+
+      // Store tokens securely
+      setAccessToken(action.payload.token, action.payload.expiresIn);
+      if (action.payload.refreshToken) {
+        setRefreshToken(action.payload.refreshToken);
+      }
+
+      // Store user data in localStorage (not sensitive)
       localStorage.setItem('auth_user', JSON.stringify(action.payload.user));
       if (action.payload.fullResponse) {
         localStorage.setItem(
@@ -56,22 +79,43 @@ const authSlice = createSlice({
         );
       }
     },
+    updateTokens: (
+      state,
+      action: PayloadAction<{
+        token: string;
+        refreshToken?: string;
+        expiresIn?: number;
+      }>,
+    ) => {
+      state.token = action.payload.token;
+      if (action.payload.refreshToken) {
+        state.refreshToken = action.payload.refreshToken;
+        setRefreshToken(action.payload.refreshToken);
+      }
+      setAccessToken(action.payload.token, action.payload.expiresIn);
+    },
     setIsAnimationComplete: (state, action: PayloadAction<boolean>) => {
       state.isAnimationComplete = action.payload;
     },
     clearAuth: (state) => {
       state.token = null;
+      state.refreshToken = null;
       state.user = null;
       state.fullResponse = null;
       state.isAuthenticated = false;
-      // Clear localStorage
-      localStorage.removeItem('auth_token');
+
+      // Clear all tokens and user data
+      clearTokens();
       localStorage.removeItem('auth_user');
       localStorage.removeItem('auth_full_response');
     },
   },
 });
 
-export const { setCredentials, setIsAnimationComplete, clearAuth } =
-  authSlice.actions;
+export const {
+  setCredentials,
+  updateTokens,
+  setIsAnimationComplete,
+  clearAuth,
+} = authSlice.actions;
 export default authSlice.reducer;

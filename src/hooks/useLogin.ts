@@ -22,6 +22,7 @@ export const useLdapLogin = () => {
       dispatch(
         setCredentials({
           token: token,
+          refreshToken: data.refresh_token,
           user: {
             id: data.user.id.toString(),
             name: data.user.name,
@@ -29,6 +30,7 @@ export const useLdapLogin = () => {
             username: data.user.username,
           },
           fullResponse: data,
+          expiresIn: data.access_token.expiresIn,
         }),
       );
 
