@@ -7,12 +7,11 @@ import { API_ENDPOINTS, buildApiUrl } from '@/config/apiConfig';
  */
 export interface Role {
   id: number;
-  name: string;
-  slug: string;
-  description?: string;
-  permissions?: Permission[];
+  portal_id: number;
+  role: string;
   created_at?: string;
   updated_at?: string;
+  portal?: Portal;
 }
 
 export interface CreateRoleInput {
