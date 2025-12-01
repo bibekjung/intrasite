@@ -1,8 +1,30 @@
 import KPI from '@/components/analytics/KPI';
 import LineChart from '@/components/analytics/LineChart';
 import BarChart from '@/components/analytics/BarChart';
+import { useHasPermissions } from '@/hooks/usePermissionCheck';
+import { LayoutDashboard } from 'lucide-react';
 
 export default function Dashboard() {
+  const hasDashboard = useHasPermissions(
+    ['admin.dashboard', 'partner.dashboard', 'web.dashboard'],
+    false,
+  );
+
+  if (!hasDashboard) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+        <div className="text-center">
+          <LayoutDashboard className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-700 mb-2">
+            Access Restricted
+          </h2>
+          <p className="text-gray-500">
+            You don't have permission to access the dashboard.
+          </p>
+        </div>
+      </div>
+    );
+  }
   const kpi = [
     { label: 'Total Employees', value: '1,248', subtitle: '+4.2% MoM' },
     { label: 'Active Sessions', value: 86, subtitle: '+12 today' },

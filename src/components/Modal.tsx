@@ -1,3 +1,5 @@
+import React from 'react';
+
 type ModalProps = {
   open: boolean;
   title?: string;

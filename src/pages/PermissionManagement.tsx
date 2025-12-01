@@ -22,21 +22,21 @@ export default function PermissionManagement() {
     );
   }
 
-  // Group permissions by module if available
+  // Group permissions by portal if available
   const groupedPermissions =
     permissions?.reduce(
       (acc, permission) => {
-        const module = permission.module || 'Other';
-        if (!acc[module]) {
-          acc[module] = [];
+        const portalCode = permission.portal?.code || 'Other';
+        if (!acc[portalCode]) {
+          acc[portalCode] = [];
         }
-        acc[module].push(permission);
+        acc[portalCode].push(permission);
         return acc;
       },
       {} as Record<string, typeof permissions>,
     ) || {};
 
-  const modules = Object.keys(groupedPermissions);
+  const portals = Object.keys(groupedPermissions);
 
   return (
     <div>
@@ -53,21 +53,21 @@ export default function PermissionManagement() {
         </div>
       </div>
 
-      {modules.length > 0 ? (
+      {portals.length > 0 ? (
         <div className="space-y-6">
-          {modules.map((module) => (
-            <div key={module} className="bg-white rounded-lg shadow">
+          {portals.map((portal) => (
+            <div key={portal} className="bg-white rounded-lg shadow">
               <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
                 <h3 className="text-lg font-semibold text-gray-800">
-                  {module}
+                  {portal}
                 </h3>
                 <p className="text-sm text-gray-500">
-                  {groupedPermissions[module].length} permission(s)
+                  {groupedPermissions[portal].length} permission(s)
                 </p>
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {groupedPermissions[module].map((permission) => (
+                  {groupedPermissions[portal].map((permission) => (
                     <div
                       key={permission.id}
                       className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -75,16 +75,14 @@ export default function PermissionManagement() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900 mb-1">
-                            {permission.name}
+                            {permission.action}
                           </h4>
                           <p className="text-sm text-gray-500 mb-2">
-                            {permission.slug}
+                            {permission.resources}
                           </p>
-                          {permission.description && (
-                            <p className="text-sm text-gray-600">
-                              {permission.description}
-                            </p>
-                          )}
+                          <p className="text-xs text-gray-400 mb-1">
+                            Method: {permission.method}
+                          </p>
                         </div>
                         <Shield
                           size={18}
@@ -121,7 +119,7 @@ export default function PermissionManagement() {
       )}
 
       {/* Alternative table view for non-grouped display */}
-      {modules.length === 1 && modules[0] === 'Other' && (
+      {portals.length === 1 && portals[0] === 'Other' && (
         <div className="bg-white rounded-lg shadow overflow-hidden mt-6">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold">All Permissions</h3>
@@ -131,16 +129,16 @@ export default function PermissionManagement() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
+                    Action
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Slug
+                    Resources
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
+                    Method
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Module
+                    Portal
                   </th>
                 </tr>
               </thead>
@@ -149,22 +147,22 @@ export default function PermissionManagement() {
                   <tr key={permission.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {permission.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {permission.slug}
+                        {permission.action}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-500">
-                        {permission.description || '-'}
+                        {permission.resources || '-'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
-                        {permission.module || 'Other'}
+                        {permission.method || '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">
+                        {permission.portal?.code || '-'}
                       </div>
                     </td>
                   </tr>

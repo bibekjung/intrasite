@@ -11,7 +11,10 @@ import PolicyDocument from './pages/PolicyDocument';
 import RoleManagement from './pages/RoleManagement';
 import PermissionManagement from './pages/PermissionManagement';
 import PortalManagement from './pages/PortalManagement';
+import EditRolePermissions from './pages/EditRolePermissions';
+import Users from './pages/Users';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ROUTES } from './config/routes';
 
 function App() {
   return (
@@ -23,22 +26,30 @@ function App() {
         {/* Protected Routes with Layout */}
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/nid-search" element={<NIDSearch />} />
-            <Route path="/directory" element={<UserDirectory />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/policies" element={<PolicyDocument />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
+            <Route path={ROUTES.NID_SEARCH} element={<NIDSearch />} />
+            <Route path={ROUTES.DIRECTORY} element={<UserDirectory />} />
+            <Route path={ROUTES.SETTINGS} element={<Settings />} />
+            <Route path={ROUTES.POLICIES} element={<PolicyDocument />} />
+            <Route path={ROUTES.PROFILE} element={<Profile />} />
+            <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
             <Route
-              path="/authorization/portals"
+              path={ROUTES.AUTHORIZATION.PORTALS}
               element={<PortalManagement />}
             />
-            <Route path="/authorization/roles" element={<RoleManagement />} />
             <Route
-              path="/authorization/permissions"
+              path={ROUTES.AUTHORIZATION.ROLES}
+              element={<RoleManagement />}
+            />
+            <Route
+              path={`${ROUTES.AUTHORIZATION.ROLES}/:id/edit`}
+              element={<EditRolePermissions />}
+            />
+            <Route
+              path={ROUTES.AUTHORIZATION.PERMISSIONS}
               element={<PermissionManagement />}
             />
+            <Route path={ROUTES.USERS} element={<Users />} />
           </Route>
         </Route>
       </Routes>

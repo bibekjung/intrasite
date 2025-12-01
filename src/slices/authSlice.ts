@@ -14,11 +14,14 @@ type User = {
   username?: string;
 };
 
+import { AccessRoutesResponse } from '@/types/permissions';
+
 type AuthState = {
   token: string | null;
   refreshToken: string | null;
   user: User | null;
   fullResponse: any | null;
+  accessRoutes: AccessRoutesResponse | null;
   isAuthenticated: boolean;
   isAnimationComplete: boolean;
 };
@@ -32,11 +35,15 @@ const getInitialState = (): AuthState => {
   const fullResponseStr = localStorage.getItem('auth_full_response');
   const fullResponse = fullResponseStr ? JSON.parse(fullResponseStr) : null;
 
+  const accessRoutesStr = localStorage.getItem('auth_access_routes');
+  const accessRoutes = accessRoutesStr ? JSON.parse(accessRoutesStr) : null;
+
   return {
     token,
     refreshToken,
     user,
     fullResponse,
+    accessRoutes,
     isAuthenticated: !!token && !!user,
     isAnimationComplete: false,
   };
@@ -79,6 +86,14 @@ const authSlice = createSlice({
         );
       }
     },
+    setAccessRoutes: (state, action: PayloadAction<AccessRoutesResponse>) => {
+      state.accessRoutes = action.payload;
+      // Store access routes in localStorage
+      localStorage.setItem(
+        'auth_access_routes',
+        JSON.stringify(action.payload),
+      );
+    },
     updateTokens: (
       state,
       action: PayloadAction<{
@@ -102,12 +117,14 @@ const authSlice = createSlice({
       state.refreshToken = null;
       state.user = null;
       state.fullResponse = null;
+      state.accessRoutes = null;
       state.isAuthenticated = false;
 
       // Clear all tokens and user data
       clearTokens();
       localStorage.removeItem('auth_user');
       localStorage.removeItem('auth_full_response');
+      localStorage.removeItem('auth_access_routes');
     },
   },
 });
@@ -116,6 +133,7 @@ export const {
   setCredentials,
   updateTokens,
   setIsAnimationComplete,
+  setAccessRoutes,
   clearAuth,
 } = authSlice.actions;
 export default authSlice.reducer;

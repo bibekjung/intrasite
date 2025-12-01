@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { logout } from '@/api/auth';
 import { clearAuth } from '@/slices/authSlice';
 import { clearTokens } from '@/utils/tokenStorage';
+import { ROUTES } from '@/config/routes';
 
 /**
  * Hook for handling user logout
@@ -25,7 +26,7 @@ export const useLogout = () => {
       clearTokens();
 
       // Step 3: Navigate to login page
-      navigate('/');
+      navigate(ROUTES.LOGIN);
     }
   };
 

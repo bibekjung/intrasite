@@ -14,6 +14,10 @@ export interface Role {
   portal?: Portal;
 }
 
+export interface RoleWithPermissions extends Role {
+  permissions?: Permission[];
+}
+
 export interface CreateRoleInput {
   portal_id: number;
   role: string;
@@ -38,14 +42,26 @@ export interface UpdateRoleInput {
   permission_ids?: number[];
 }
 
+export interface AddPermissionToRoleInput {
+  role_id: number;
+  permission_id: number[];
+}
+
 export interface Permission {
   id: number;
-  name: string;
-  slug: string;
-  description?: string;
-  module?: string;
+  portal_id: number;
+  action: string;
+  resources: string;
+  method: string;
   created_at?: string;
   updated_at?: string;
+  portal?: Portal;
+  pivot?: {
+    role_id: number;
+    permission_id: number;
+    created_at?: string;
+    updated_at?: string;
+  };
 }
 
 /**
@@ -66,15 +82,40 @@ export const getRoles = async (): Promise<Role[]> => {
 
 export const getRole = async (id: number): Promise<Role> => {
   try {
-    const response = await apiClient.get(
-      buildApiUrl(API_ENDPOINTS.ROLES.GET, { id }),
-    );
+    const endpoint = API_ENDPOINTS.ROLES.GET.replace(':id', String(id));
+    const response = await apiClient.get(endpoint);
     return response.data?.data || response.data;
   } catch (error: unknown) {
     const message =
       error instanceof AxiosError
         ? error.response?.data?.message || 'Failed to fetch role'
         : 'Failed to fetch role';
+    throw new Error(message);
+  }
+};
+
+export const getRoleWithPermissions = async (
+  id: number,
+): Promise<RoleWithPermissions> => {
+  try {
+    const endpoint = API_ENDPOINTS.ROLES.GET_WITH_PERMISSIONS.replace(
+      ':id',
+      String(id),
+    );
+    const response = await apiClient.get(endpoint);
+    // API returns data as an array, get the first item
+    const data = response.data?.data;
+    if (Array.isArray(data) && data.length > 0) {
+      return data[0];
+    }
+    // Fallback if data is not an array
+    return data || response.data;
+  } catch (error: unknown) {
+    const message =
+      error instanceof AxiosError
+        ? error.response?.data?.message ||
+          'Failed to fetch role with permissions'
+        : 'Failed to fetch role with permissions';
     throw new Error(message);
   }
 };
@@ -97,10 +138,8 @@ export const updateRole = async (
   data: UpdateRoleInput,
 ): Promise<Role> => {
   try {
-    const response = await apiClient.put(
-      buildApiUrl(API_ENDPOINTS.ROLES.UPDATE, { id }),
-      data,
-    );
+    const endpoint = API_ENDPOINTS.ROLES.UPDATE.replace(':id', String(id));
+    const response = await apiClient.put(endpoint, data);
     return response.data?.data || response.data;
   } catch (error: unknown) {
     const message =
@@ -113,7 +152,8 @@ export const updateRole = async (
 
 export const deleteRole = async (id: number): Promise<void> => {
   try {
-    await apiClient.delete(buildApiUrl(API_ENDPOINTS.ROLES.DELETE, { id }));
+    const endpoint = API_ENDPOINTS.ROLES.DELETE.replace(':id', String(id));
+    await apiClient.delete(endpoint);
   } catch (error: unknown) {
     const message =
       error instanceof AxiosError
@@ -151,6 +191,20 @@ export const getPermission = async (id: number): Promise<Permission> => {
       error instanceof AxiosError
         ? error.response?.data?.message || 'Failed to fetch permission'
         : 'Failed to fetch permission';
+    throw new Error(message);
+  }
+};
+
+export const addPermissionToRole = async (
+  data: AddPermissionToRoleInput,
+): Promise<void> => {
+  try {
+    await apiClient.post(API_ENDPOINTS.PERMISSIONS.ADDPERMISSIONROLE, data);
+  } catch (error: unknown) {
+    const message =
+      error instanceof AxiosError
+        ? error.response?.data?.message || 'Failed to add permissions to role'
+        : 'Failed to add permissions to role';
     throw new Error(message);
   }
 };

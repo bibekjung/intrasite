@@ -7,6 +7,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, Edit2, Loader2 } from 'lucide-react';
 
 export default function PortalManagement() {
@@ -54,150 +63,127 @@ export default function PortalManagement() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Portal Management</h2>
-        <Button
-          onClick={() => setIsCreating(!isCreating)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus size={18} className="mr-2" />
+        <Button onClick={() => setIsCreating(!isCreating)}>
+          <Plus className="h-4 w-4" />
           {isCreating ? 'Cancel' : 'Create Portal'}
         </Button>
       </div>
 
       {isCreating && (
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Create New Portal</h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="code">Portal Code *</Label>
-              <Input
-                id="code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="e.g., partner, admin, client"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Enter a unique code for the portal
-              </p>
-            </div>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Create New Portal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">Portal Code *</Label>
+                <Input
+                  id="code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="e.g., partner, admin, client"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter a unique code for the portal
+                </p>
+              </div>
 
-            <div className="flex gap-3">
-              <Button
-                type="submit"
-                disabled={createPortal.isPending || !code.trim()}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {createPortal.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Portal'
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsCreating(false);
-                  setCode('');
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </div>
+              <div className="flex gap-3">
+                <Button
+                  type="submit"
+                  disabled={createPortal.isPending || !code.trim()}
+                >
+                  {createPortal.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Portal'
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreating(false);
+                    setCode('');
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold">Portals List</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Code
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created At
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+      <Card>
+        <CardHeader>
+          <CardTitle>Portals List</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Code</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Created At</TableHead>
+                <TableHead className="w-[150px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {portals && portals.length > 0 ? (
                 portals.map((portal) => (
-                  <tr key={portal.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {portal.id}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {portal.code}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
+                  <TableRow key={portal.id}>
+                    <TableCell className="font-medium">{portal.id}</TableCell>
+                    <TableCell className="font-medium">{portal.code}</TableCell>
+                    <TableCell>
+                      <span className="text-muted-foreground">
                         {portal.name || '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-muted-foreground">
                         {portal.created_at
                           ? new Date(portal.created_at).toLocaleDateString()
                           : '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      </span>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <Edit2 size={16} />
+                        <Button variant="outline" size="sm">
+                          <Edit2 className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(portal.id)}
                           disabled={deletePortal.isPending}
-                          className="text-red-600 hover:text-red-800"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               ) : (
-                <tr>
-                  <td
+                <TableRow>
+                  <TableCell
                     colSpan={5}
-                    className="px-6 py-8 text-center text-gray-500"
+                    className="text-center text-muted-foreground py-8"
                   >
                     No portals found. Create your first portal to get started.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Navigate } from 'react-router-dom';
+import { ROUTES } from '@/config/routes';
 
 const LoginForm = () => {
   const dispatch = useDispatch();
@@ -43,7 +44,7 @@ const LoginForm = () => {
 
   // next page after authentication
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={ROUTES.DASHBOARD} replace />;
   }
 
   return (

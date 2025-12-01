@@ -9,6 +9,7 @@ import {
   type RefreshTokenInput,
   type RefreshTokenResponse,
 } from './schemas/authSchema';
+import { type AccessRoutesResponse } from '@/types/permissions';
 import {
   getAccessToken,
   getRefreshToken,
@@ -727,4 +728,50 @@ export const logout = async (): Promise<void> => {
 export const fetchUserData = async () => {
   const response = await apiClient.get(API_ENDPOINTS.USER.PROFILE);
   return response.data;
+};
+
+/**
+ * Get access routes for the authenticated user
+ * This endpoint returns the routes/permissions the user has access to
+ */
+export const getAccessRoutes = async (): Promise<AccessRoutesResponse> => {
+  try {
+    const response = await apiClient.get<AccessRoutesResponse>(
+      API_ENDPOINTS.AUTH.GET_ACCESS_ROUTES,
+    );
+
+    // Return the full response structure
+    return response.data;
+  } catch (error: unknown) {
+    if (isAxiosError(error)) {
+      const status = error.response?.status;
+      let errorMessage = 'Failed to fetch access routes';
+
+      if (error.response?.data) {
+        const responseData = error.response.data;
+        if (typeof responseData === 'string' && responseData.trim()) {
+          errorMessage = responseData;
+        } else if (
+          typeof responseData === 'object' &&
+          responseData !== null &&
+          'message' in responseData &&
+          typeof responseData.message === 'string'
+        ) {
+          errorMessage = responseData.message;
+        }
+      }
+
+      if (status === 401) {
+        errorMessage = 'Unauthorized. Please login again.';
+      } else if (status === 403) {
+        errorMessage = 'Access forbidden. Please contact your administrator.';
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    const errorMessage =
+      error instanceof Error ? error.message : 'Failed to fetch access routes';
+    throw new Error(errorMessage);
+  }
 };

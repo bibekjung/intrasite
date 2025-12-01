@@ -10,13 +10,19 @@ import {
   ChevronRight,
   Shield,
   Projector,
+  User,
 } from 'lucide-react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { setIsOpen } from '@/slices/sidebarSlice';
 import { useLogout } from '@/hooks/useLogout';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { ROUTES } from '@/config/routes';
+import {
+  useHasPermission,
+  useHasPermissions,
+} from '@/hooks/usePermissionCheck';
 
 export default function Sidebar() {
   const dispatch = useDispatch();
@@ -25,63 +31,110 @@ export default function Sidebar() {
 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
-  const navItems = [
-    {
-      name: 'Dashboard',
-      path: '/dashboard',
-      icon: <LayoutDashboard size={20} />,
-    },
+  // Permission checks
+  const hasDashboard = useHasPermissions(
+    ['admin.dashboard', 'partner.dashboard', 'web.dashboard'],
+    false,
+  );
+  const hasUsers = useHasPermission('admin.get-all-user');
+  const hasPortals = useHasPermission('admin.get-all-portal');
+  const hasRoles = useHasPermission('admin.get-all-role');
+  const hasPermissions = useHasPermission('admin.get-all-permission');
+  const hasAuthorization = hasUsers || hasPortals || hasRoles || hasPermissions;
 
-    // {
-    //   name: 'Master Setting',
-    //   path: '#',
-    //   icon: <Settings size={20} />,
-    //   children: [
-    //     { name: 'User and Roles', path: '/settings/users' },
-    //     { name: 'Permission', path: '/settings/roles' },
-    //   ],
-    // },
-    {
-      name: 'Authorization',
-      path: '#',
-      icon: <Shield size={20} />,
-      children: [
-        {
-          name: 'Portal',
-          path: '/authorization/portals',
-          icon: <Projector size={18} />,
-        },
-        {
-          name: 'Roles',
-          path: '/authorization/roles',
-          icon: <IdCard size={18} />,
-        },
-        {
-          name: 'Permissions',
-          path: '/authorization/permissions',
-          icon: <NotebookPen size={18} />,
-        },
-      ],
-    },
+  // Define all navigation items with their permission requirements
+  const allNavItems = useMemo(
+    () => [
+      {
+        name: 'Dashboard',
+        path: ROUTES.DASHBOARD,
+        icon: <LayoutDashboard size={20} />,
+        permission: hasDashboard,
+      },
+      {
+        name: 'Authorization',
+        path: '#',
+        icon: <Shield size={20} />,
+        permission: hasAuthorization,
+        children: [
+          {
+            name: 'Users',
+            path: ROUTES.USERS,
+            icon: <User size={18} />,
+            permission: hasUsers,
+          },
+          {
+            name: 'Portal',
+            path: ROUTES.AUTHORIZATION.PORTALS,
+            icon: <Projector size={18} />,
+            permission: hasPortals,
+          },
+          {
+            name: 'Roles',
+            path: ROUTES.AUTHORIZATION.ROLES,
+            icon: <IdCard size={18} />,
+            permission: hasRoles,
+          },
+          {
+            name: 'Permissions',
+            path: ROUTES.AUTHORIZATION.PERMISSIONS,
+            icon: <NotebookPen size={18} />,
+            permission: hasPermissions,
+          },
+        ],
+      },
+      {
+        name: 'NID Search',
+        path: ROUTES.NID_SEARCH,
+        icon: <IdCard size={20} />,
+        permission: false, // Add permission check when available
+      },
+      {
+        name: 'Directory',
+        path: ROUTES.DIRECTORY,
+        icon: <NotebookPen size={20} />,
+        permission: false, // Add permission check when available
+      },
+      {
+        name: 'Policy Document',
+        path: ROUTES.POLICIES,
+        icon: <Scale size={20} />,
+        permission: false, // Add permission check when available
+      },
+    ],
+    [
+      hasDashboard,
+      hasUsers,
+      hasPortals,
+      hasRoles,
+      hasPermissions,
+      hasAuthorization,
+    ],
+  );
 
-    {
-      name: 'NID Search',
-      path: '/nid-search',
-      icon: <IdCard size={20} />,
-    },
-
-    {
-      name: 'Directory',
-      path: '/directory',
-      icon: <NotebookPen size={20} />,
-    },
-
-    {
-      name: 'Policy Document',
-      path: '/policies',
-      icon: <Scale size={20} />,
-    },
-  ];
+  // Filter navigation items based on permissions
+  const navItems = useMemo(() => {
+    return allNavItems
+      .filter((item) => item.permission)
+      .map((item) => {
+        if (item.children) {
+          // Filter children based on their permissions
+          const filteredChildren = item.children.filter(
+            (child) => child.permission,
+          );
+          // Only show parent if it has at least one visible child
+          if (filteredChildren.length > 0) {
+            return {
+              ...item,
+              children: filteredChildren,
+            };
+          }
+          return null;
+        }
+        return item;
+      })
+      .filter((item) => item !== null) as typeof allNavItems;
+  }, [allNavItems]);
 
   return (
     <div

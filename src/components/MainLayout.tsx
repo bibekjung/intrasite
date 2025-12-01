@@ -6,6 +6,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useLogout } from '@/hooks/useLogout';
 import { useNavigate } from 'react-router-dom';
+import { BreadcrumbNav } from '@/components/BreadcrumbNav';
+import { ROUTES } from '@/config/routes';
 
 export default function MainLayout() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -54,7 +56,7 @@ export default function MainLayout() {
                   className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100 transition"
                   onClick={() => {
                     setIsProfileOpen(false);
-                    navigate('/profile');
+                    navigate(ROUTES.PROFILE);
                   }}
                 >
                   <User size={18} />
@@ -64,7 +66,7 @@ export default function MainLayout() {
                   className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100 transition"
                   onClick={() => {
                     setIsProfileOpen(false);
-                    navigate('/reset-password');
+                    navigate(ROUTES.RESET_PASSWORD);
                   }}
                 >
                   <KeyRound size={18} />
@@ -83,6 +85,9 @@ export default function MainLayout() {
         </header>
 
         <main className="flex-1 p-6 bg-white overflow-y-auto">
+          <div className="mb-4">
+            <BreadcrumbNav />
+          </div>
           <Outlet />
         </main>
       </div>

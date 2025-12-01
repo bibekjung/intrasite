@@ -45,6 +45,7 @@ export const API_ENDPOINTS = {
     LOGOUT: '/logout',
     FORGOT_PASSWORD: '/forgot-password',
     RESET_PASSWORD: '/reset-password',
+    GET_ACCESS_ROUTES: '/get-access-routes',
   },
 
   // User endpoints
@@ -81,18 +82,29 @@ export const API_ENDPOINTS = {
     DOWNLOAD: '/documents/:id/download',
   },
 
+  // Admin User endpoints
+  ADMIN_USERS: {
+    LIST: '/admin/get-all-user',
+    CREATE: '/admin/create-user',
+    GET: '/admin/get-user/:id',
+    UPDATE: '/admin/update-user/:id',
+    DELETE: '/admin/delete-user/:id',
+  },
+
   // Authorization endpoints
   ROLES: {
     LIST: '/admin/get-all-role',
     CREATE: '/admin/create-role',
-    GET: '/roles/:id',
-    UPDATE: '/roles/:id',
-    DELETE: '/roles/:id',
+    GET: '/admin/get-role/:id',
+    GET_WITH_PERMISSIONS: '/admin/get-role-with-permissions/:id',
+    UPDATE: '/admin/update-role/:id',
+    DELETE: '/admin/delete-role/:id',
   },
 
   PERMISSIONS: {
-    LIST: '/permissions',
+    LIST: '/admin/get-all-permission',
     GET: '/permissions/:id',
+    ADDPERMISSIONROLE: '/admin/add-permission-to-role',
   },
 
   PORTAL: {

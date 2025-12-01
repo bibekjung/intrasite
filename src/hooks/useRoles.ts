@@ -2,12 +2,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getRoles,
   getRole,
+  getRoleWithPermissions,
   createRole,
   updateRole,
   deleteRole,
+  addPermissionToRole,
   type Role,
+  type RoleWithPermissions,
   type CreateRoleInput,
   type UpdateRoleInput,
+  type AddPermissionToRoleInput,
 } from '@/api/authorization';
 import { useToast } from '@/components/ui/toaster';
 
@@ -22,6 +26,14 @@ export const useRole = (id: number) => {
   return useQuery<Role, Error>({
     queryKey: ['role', id],
     queryFn: () => getRole(id),
+    enabled: !!id,
+  });
+};
+
+export const useRoleWithPermissions = (id: number) => {
+  return useQuery<RoleWithPermissions, Error>({
+    queryKey: ['roleWithPermissions', id],
+    queryFn: () => getRoleWithPermissions(id),
     enabled: !!id,
   });
 };
@@ -93,6 +105,31 @@ export const useDeleteRole = () => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete role',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useAddPermissionToRole = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation<void, Error, AddPermissionToRoleInput>({
+    mutationFn: addPermissionToRole,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: ['role', variables.role_id] });
+      toast({
+        title: 'Success',
+        description: 'Permissions added to role successfully',
+        variant: 'default',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add permissions to role',
         variant: 'destructive',
       });
     },
