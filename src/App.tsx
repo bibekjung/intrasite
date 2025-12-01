@@ -8,6 +8,9 @@ import NIDSearch from './pages/NIDSearch';
 import UserDirectory from './pages/UserDirectory';
 import MainLayout from './components/MainLayout';
 import PolicyDocument from './pages/PolicyDocument';
+import RoleManagement from './pages/RoleManagement';
+import PermissionManagement from './pages/PermissionManagement';
+import PortalManagement from './pages/PortalManagement';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -27,6 +30,15 @@ function App() {
             <Route path="/policies" element={<PolicyDocument />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route
+              path="/authorization/portals"
+              element={<PortalManagement />}
+            />
+            <Route path="/authorization/roles" element={<RoleManagement />} />
+            <Route
+              path="/authorization/permissions"
+              element={<PermissionManagement />}
+            />
           </Route>
         </Route>
       </Routes>

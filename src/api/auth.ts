@@ -1,4 +1,8 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosError,
+  InternalAxiosRequestConfig,
+  isAxiosError,
+} from 'axios';
 import {
   type LoginInput,
   type LoginResponse,
@@ -29,8 +33,8 @@ export const apiClient = axios.create({
 // Flag to prevent multiple simultaneous refresh requests
 let isRefreshing = false;
 let failedQueue: Array<{
-  resolve: (value?: any) => void;
-  reject: (error?: any) => void;
+  resolve: (value?: string | null) => void;
+  reject: (error?: Error) => void;
 }> = [];
 
 const processQueue = (error: Error | null, token: string | null = null) => {
@@ -110,7 +114,7 @@ const refreshTokenIfNeeded = async (): Promise<string | null> => {
 apiClient.interceptors.request.use(
   async (config) => {
     if (!config.headers) {
-      config.headers = {} as any;
+      config.headers = {} as Record<string, string>;
     }
 
     // Skip token refresh for login, logout, and refresh token endpoints
@@ -270,8 +274,9 @@ export const loginLdap = async (
     if (typeof data === 'string') {
       try {
         data = JSON.parse(data);
-      } catch (e: any) {
-        throw new Error('Invalid response format from server', e);
+      } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        throw new Error(`Invalid response format from server: ${errorMessage}`);
       }
     }
 
@@ -424,37 +429,49 @@ export const loginLdap = async (
     };
 
     return loginResponse;
-  } catch (error: any) {
-    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+  } catch (error: unknown) {
+    if (
+      (error instanceof Error && error.message?.includes('timeout')) ||
+      (isAxiosError(error) && error.code === 'ECONNABORTED')
+    ) {
       throw new Error(
         'Connection timeout. Please check your network connection and try again.',
       );
     }
 
     if (
-      error.code === 'ERR_NETWORK' ||
-      error.code === 'ERR_CONNECTION_REFUSED' ||
-      error.code === 'ERR_CONNECTION_TIMED_OUT'
+      isAxiosError(error) &&
+      (error.code === 'ERR_NETWORK' ||
+        error.code === 'ERR_CONNECTION_REFUSED' ||
+        error.code === 'ERR_CONNECTION_TIMED_OUT')
     ) {
       throw new Error(
         'Unable to connect to the server. Please check your network connection and try again.',
       );
     }
 
-    if (error.response) {
+    if (isAxiosError(error) && error.response) {
       const status = error.response.status;
       let errorMessage = 'An error occurred during login';
 
       if (error.response.data) {
-        if (
-          typeof error.response.data === 'string' &&
-          error.response.data.trim()
+        const responseData = error.response.data;
+        if (typeof responseData === 'string' && responseData.trim()) {
+          errorMessage = responseData;
+        } else if (
+          typeof responseData === 'object' &&
+          responseData !== null &&
+          'message' in responseData &&
+          typeof responseData.message === 'string'
         ) {
-          errorMessage = error.response.data;
-        } else if (error.response.data.message) {
-          errorMessage = error.response.data.message;
-        } else if (error.response.data.error) {
-          errorMessage = error.response.data.error;
+          errorMessage = responseData.message;
+        } else if (
+          typeof responseData === 'object' &&
+          responseData !== null &&
+          'error' in responseData &&
+          typeof responseData.error === 'string'
+        ) {
+          errorMessage = responseData.error;
         }
       }
 
@@ -481,13 +498,15 @@ export const loginLdap = async (
       throw new Error(errorMessage);
     }
 
-    const errorMessage = error.message || 'An error occurred during login';
+    const errorMessage =
+      error instanceof Error ? error.message : 'An error occurred during login';
     throw new Error(errorMessage);
   }
 };
 
 /**
  * Refresh access token using refresh token
+ * FIXED: Better error handling and response parsing to prevent logout on 200 responses
  */
 export const refreshAccessToken = async (
   refreshToken: string,
@@ -502,15 +521,26 @@ export const refreshAccessToken = async (
         },
         // Don't retry refresh token requests
         _retry: true,
-      } as any,
+      } as InternalAxiosRequestConfig & { _retry?: boolean },
     );
 
+    // FIXED: Handle wrapped response structure (like login response)
     let data = response.data;
+
+    // If response has a nested 'data' property, use that (common API pattern)
+    // This handles: { error: false, data: {...} } -> extract {...}
+    if (data && typeof data === 'object' && 'data' in data && data.data) {
+      data = data.data;
+    }
+
     if (typeof data === 'string') {
       try {
         data = JSON.parse(data);
-      } catch (e: any) {
-        throw new Error('Invalid response format from server', e);
+      } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        // eslint-disable-next-line no-console
+        console.error('Failed to parse refresh token response:', errorMessage);
+        throw new Error(`Invalid response format from server: ${errorMessage}`);
       }
     }
 
@@ -526,6 +556,7 @@ export const refreshAccessToken = async (
       token?: string;
       accessToken?: string;
       tokenType?: string;
+      refreshToken?: string;
     };
 
     // Extract expires_in from response (can be at root level or nested)
@@ -538,14 +569,21 @@ export const refreshAccessToken = async (
             : 60;
     }
 
+    // FIXED: Better access token extraction with more fallbacks
     if (responseData.access_token) {
       if (typeof responseData.access_token === 'string') {
         accessToken = responseData.access_token;
-      } else if (responseData.access_token.accessToken) {
-        accessToken = responseData.access_token.accessToken;
+      } else if (
+        responseData.access_token &&
+        typeof responseData.access_token === 'object'
+      ) {
+        accessToken = responseData.access_token.accessToken || '';
         accessTokenId = responseData.access_token.accessTokenId || '';
         tokenType =
-          responseData.token_type || responseData.tokenType || 'Bearer';
+          responseData.access_token.tokenType ||
+          responseData.token_type ||
+          responseData.tokenType ||
+          'Bearer';
         // Use expires_in from nested access_token if available, otherwise use root level
         if (responseData.access_token.expiresIn !== undefined) {
           expiresIn =
@@ -562,16 +600,25 @@ export const refreshAccessToken = async (
       accessToken = responseData.accessToken;
     }
 
+    // FIXED: Better refresh token extraction
     if (responseData.refresh_token) {
       newRefreshToken = responseData.refresh_token;
-    } else if ((data as any).refreshToken) {
-      newRefreshToken = (data as any).refreshToken;
+    } else if (responseData.refreshToken) {
+      newRefreshToken = responseData.refreshToken;
     }
 
-    if (!accessToken) {
+    // FIXED: Better error message with full response for debugging
+    // Only throw if we truly don't have an access token
+    if (!accessToken || accessToken.trim() === '') {
+      // eslint-disable-next-line no-console
+      console.error(
+        'Refresh token response structure:',
+        JSON.stringify(data, null, 2),
+      );
+      // eslint-disable-next-line no-console
+      console.error('Response status:', response.status);
       throw new Error(
-        'Access token not found in refresh response. Response: ' +
-          JSON.stringify(data),
+        `Access token not found in refresh response. Response structure: ${JSON.stringify(data)}`,
       );
     }
 
@@ -585,53 +632,67 @@ export const refreshAccessToken = async (
       refresh_token: newRefreshToken,
       token_type: responseData.token_type || tokenType,
     };
-  } catch (error: any) {
-    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-      throw new Error(
-        'Connection timeout. Please check your network connection and try again.',
-      );
+  } catch (error: unknown) {
+    // FIXED: Better error handling with proper typing
+    // If it's already our custom error, re-throw it
+    if (error instanceof Error) {
+      if (error.message.includes('Access token not found')) {
+        throw error;
+      }
     }
 
-    if (
-      error.code === 'ERR_NETWORK' ||
-      error.code === 'ERR_CONNECTION_REFUSED' ||
-      error.code === 'ERR_CONNECTION_TIMED_OUT'
-    ) {
-      throw new Error(
-        'Unable to connect to the server. Please check your network connection and try again.',
-      );
-    }
+    // Handle Axios errors
+    if (isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        throw new Error(
+          'Connection timeout. Please check your network connection and try again.',
+        );
+      }
 
-    if (error.response) {
-      const status = error.response.status;
-      let errorMessage = 'An error occurred during token refresh';
+      if (
+        error.code === 'ERR_NETWORK' ||
+        error.code === 'ERR_CONNECTION_REFUSED' ||
+        error.code === 'ERR_CONNECTION_TIMED_OUT'
+      ) {
+        throw new Error(
+          'Unable to connect to the server. Please check your network connection and try again.',
+        );
+      }
 
-      if (error.response.data) {
-        if (
-          typeof error.response.data === 'string' &&
-          error.response.data.trim()
-        ) {
-          errorMessage = error.response.data;
-        } else if (error.response.data.message) {
-          errorMessage = error.response.data.message;
-        } else if (error.response.data.error) {
-          errorMessage = error.response.data.error;
+      if (error.response) {
+        const status = error.response.status;
+        let errorMessage = 'An error occurred during token refresh';
+
+        if (error.response.data) {
+          if (
+            typeof error.response.data === 'string' &&
+            error.response.data.trim()
+          ) {
+            errorMessage = error.response.data;
+          } else if (error.response.data.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.response.data.error) {
+            errorMessage = error.response.data.error;
+          }
         }
-      }
 
-      if (status === 401) {
-        errorMessage = 'Refresh token expired. Please login again.';
-      } else if (status === 403) {
-        errorMessage = 'Refresh token invalid. Please login again.';
-      } else if (status === 500) {
-        errorMessage = errorMessage || 'Server error. Please try again later.';
-      }
+        if (status === 401) {
+          errorMessage = 'Refresh token expired. Please login again.';
+        } else if (status === 403) {
+          errorMessage = 'Refresh token invalid. Please login again.';
+        } else if (status === 500) {
+          errorMessage =
+            errorMessage || 'Server error. Please try again later.';
+        }
 
-      throw new Error(errorMessage);
+        throw new Error(errorMessage);
+      }
     }
 
     const errorMessage =
-      error.message || 'An error occurred during token refresh';
+      error instanceof Error
+        ? error.message
+        : 'An error occurred during token refresh';
     throw new Error(errorMessage);
   }
 };
@@ -651,13 +712,13 @@ export const logout = async (): Promise<void> => {
         },
       },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Even if logout API call fails, we should still clear frontend state
     // Log the error but don't throw - we want to proceed with frontend cleanup
     // eslint-disable-next-line no-console
     console.warn(
       'Backend logout failed, but proceeding with frontend cleanup:',
-      error,
+      error instanceof Error ? error.message : String(error),
     );
     // Don't throw - we'll still clear frontend state regardless
   }

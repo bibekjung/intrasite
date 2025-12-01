@@ -15,7 +15,7 @@ export default function MainLayout() {
   const { handleLogout } = useLogout();
 
   useEffect(() => {
-    const handleClickOutside = (event: any) => {
+    const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
         !dropdownRef?.current?.contains(event.target)

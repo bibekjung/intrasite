@@ -80,6 +80,28 @@ export const API_ENDPOINTS = {
     GET: '/documents/:id',
     DOWNLOAD: '/documents/:id/download',
   },
+
+  // Authorization endpoints
+  ROLES: {
+    LIST: '/admin/get-all-role',
+    CREATE: '/admin/create-role',
+    GET: '/roles/:id',
+    UPDATE: '/roles/:id',
+    DELETE: '/roles/:id',
+  },
+
+  PERMISSIONS: {
+    LIST: '/permissions',
+    GET: '/permissions/:id',
+  },
+
+  PORTAL: {
+    CREATE: '/admin/create-portal',
+    LIST: '/admin/get-all-portal',
+    GET: '/admin/get-portal/:id',
+    UPDATE: '/admin/update-portal/:id',
+    DELETE: '/admin/delete-portal/:id',
+  },
 } as const;
 
 /**

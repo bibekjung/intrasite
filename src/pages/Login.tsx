@@ -36,7 +36,7 @@ const LoginForm = () => {
     // hard code portal as 'partner'
     const loginPayload = {
       ...data,
-      portal: 'partner',
+      portal: 'admin',
     };
     login(loginPayload);
   };
