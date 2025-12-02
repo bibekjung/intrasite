@@ -89,6 +89,7 @@ export const API_ENDPOINTS = {
     GET: '/admin/get-user/:id',
     UPDATE: '/admin/update-user/:id',
     DELETE: '/admin/delete-user/:id',
+    ASSIGN_ROLES: '/admin/assign-role-to-user',
   },
 
   // Authorization endpoints

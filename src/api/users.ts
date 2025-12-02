@@ -107,3 +107,22 @@ export const getUser = async (id: number): Promise<AdminUser> => {
     throw new Error(message);
   }
 };
+
+export interface AssignRolesToUserInput {
+  user_id: number;
+  role_id: number[];
+}
+
+export const assignRolesToUser = async (
+  data: AssignRolesToUserInput,
+): Promise<void> => {
+  try {
+    await apiClient.post(API_ENDPOINTS.ADMIN_USERS.ASSIGN_ROLES, data);
+  } catch (error: unknown) {
+    const message =
+      error instanceof AxiosError
+        ? error.response?.data?.message || 'Failed to assign roles to user'
+        : 'Failed to assign roles to user';
+    throw new Error(message);
+  }
+};

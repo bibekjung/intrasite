@@ -1,15 +1,38 @@
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 import KPI from '@/components/analytics/KPI';
 import LineChart from '@/components/analytics/LineChart';
 import BarChart from '@/components/analytics/BarChart';
 import { useHasPermissions } from '@/hooks/usePermissionCheck';
-import { LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard, Loader2 } from 'lucide-react';
 
 export default function Dashboard() {
+  const { isAccessRoutesLoaded, isLoadingAccessRoutes } = useSelector(
+    (state: RootState) => state.auth,
+  );
   const hasDashboard = useHasPermissions(
     ['admin.dashboard', 'partner.dashboard', 'web.dashboard'],
     false,
   );
 
+  // Show loading screen while access routes are being fetched
+  if (!isAccessRoutesLoaded || isLoadingAccessRoutes) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">
+            Loading Dashboard
+          </h2>
+          <p className="text-gray-500">
+            Please wait while we load your permissions...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Only check permissions after access routes are loaded
   if (!hasDashboard) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">

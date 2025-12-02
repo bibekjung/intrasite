@@ -24,6 +24,8 @@ type AuthState = {
   accessRoutes: AccessRoutesResponse | null;
   isAuthenticated: boolean;
   isAnimationComplete: boolean;
+  isLoadingAccessRoutes: boolean;
+  isAccessRoutesLoaded: boolean;
 };
 
 // Load initial state from secure token storage
@@ -37,6 +39,8 @@ const getInitialState = (): AuthState => {
 
   const accessRoutesStr = localStorage.getItem('auth_access_routes');
   const accessRoutes = accessRoutesStr ? JSON.parse(accessRoutesStr) : null;
+  // If access routes exist in localStorage, they are already loaded
+  const isAccessRoutesLoaded = !!accessRoutes;
 
   return {
     token,
@@ -46,6 +50,8 @@ const getInitialState = (): AuthState => {
     accessRoutes,
     isAuthenticated: !!token && !!user,
     isAnimationComplete: false,
+    isLoadingAccessRoutes: false,
+    isAccessRoutesLoaded,
   };
 };
 
@@ -88,11 +94,16 @@ const authSlice = createSlice({
     },
     setAccessRoutes: (state, action: PayloadAction<AccessRoutesResponse>) => {
       state.accessRoutes = action.payload;
+      state.isLoadingAccessRoutes = false;
+      state.isAccessRoutesLoaded = true;
       // Store access routes in localStorage
       localStorage.setItem(
         'auth_access_routes',
         JSON.stringify(action.payload),
       );
+    },
+    setIsLoadingAccessRoutes: (state, action: PayloadAction<boolean>) => {
+      state.isLoadingAccessRoutes = action.payload;
     },
     updateTokens: (
       state,
@@ -119,6 +130,8 @@ const authSlice = createSlice({
       state.fullResponse = null;
       state.accessRoutes = null;
       state.isAuthenticated = false;
+      state.isLoadingAccessRoutes = false;
+      state.isAccessRoutesLoaded = false;
 
       // Clear all tokens and user data
       clearTokens();
@@ -134,6 +147,7 @@ export const {
   updateTokens,
   setIsAnimationComplete,
   setAccessRoutes,
+  setIsLoadingAccessRoutes,
   clearAuth,
 } = authSlice.actions;
 export default authSlice.reducer;

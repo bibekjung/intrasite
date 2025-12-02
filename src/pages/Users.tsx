@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
-import { useUsers } from '@/hooks/useUsers';
+import { useState, useMemo, useEffect } from 'react';
+import { useUsers, useAssignRolesToUser } from '@/hooks/useUsers';
+import { useRoles } from '@/hooks/useRoles';
 import { useHasPermission } from '@/hooks/usePermissionCheck';
 import {
   Loader2,
@@ -22,12 +23,17 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { MultiSelect } from '@/components/ui/multi-select';
+import { Label } from '@/components/ui/label';
 
 export default function Users() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRoles, setSelectedRoles] = useState<(string | number)[]>([]);
   const { data: paginatedData, isLoading, error } = useUsers(currentPage);
+  const { data: roles, isLoading: rolesLoading } = useRoles();
+  const assignRolesMutation = useAssignRolesToUser();
   const canViewUsers = useHasPermission('admin.get-all-user');
 
   const users = paginatedData?.data || [];
@@ -38,6 +44,24 @@ export default function Users() {
     return users.find((user: any) => user.id === selectedUserId) || null;
   }, [selectedUserId, users]);
 
+  // Convert roles to MultiSelect options format
+  const roleOptions = useMemo(() => {
+    if (!roles) return [];
+    return roles.map((role) => ({
+      value: role.id,
+      label: role.role,
+    }));
+  }, [roles]);
+
+  // Initialize selected roles when user is selected
+  useEffect(() => {
+    if (selectedUser && selectedUser.roles) {
+      setSelectedRoles(selectedUser.roles.map((role: any) => role.id));
+    } else {
+      setSelectedRoles([]);
+    }
+  }, [selectedUser]);
+
   const handleViewUser = (userId: number) => {
     setSelectedUserId(userId);
     setIsModalOpen(true);
@@ -46,6 +70,22 @@ export default function Users() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedUserId(null);
+    setSelectedRoles([]);
+  };
+
+  const handleSaveRoles = async () => {
+    if (!selectedUserId) return;
+
+    try {
+      await assignRolesMutation.mutateAsync({
+        user_id: selectedUserId,
+        role_id: selectedRoles.map((id) => Number(id)),
+      });
+      // Optionally close the modal after successful save
+      // handleCloseModal();
+    } catch (error) {
+      return error;
+    }
   };
 
   const pagination = paginatedData
@@ -385,9 +425,39 @@ export default function Users() {
                 </p>
               </div>
             </div>
+            <div>
+              <Label
+                htmlFor="roles-select"
+                className="text-sm text-gray-500 mb-2 block"
+              >
+                Roles
+              </Label>
+              {rolesLoading ? (
+                <div className="flex items-center gap-2 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                  <span className="text-sm text-gray-500">
+                    Loading roles...
+                  </span>
+                </div>
+              ) : (
+                <MultiSelect
+                  options={roleOptions}
+                  selected={selectedRoles}
+                  onChange={setSelectedRoles}
+                  placeholder="Select roles..."
+                  className="w-full"
+                />
+              )}
+              {selectedRoles.length > 0 && (
+                <p className="text-xs text-gray-400 mt-2">
+                  {selectedRoles.length} role
+                  {selectedRoles.length !== 1 ? 's' : ''} selected
+                </p>
+              )}
+            </div>
             {selectedUser.roles && selectedUser.roles.length > 0 && (
               <div>
-                <p className="text-sm text-gray-500 mb-2">Roles</p>
+                <p className="text-sm text-gray-500 mb-2">Current Roles</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedUser.roles.map((role) => (
                     <span
@@ -400,6 +470,32 @@ export default function Users() {
                 </div>
               </div>
             )}
+            <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+              <Button
+                variant="outline"
+                onClick={handleCloseModal}
+                disabled={assignRolesMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveRoles}
+                disabled={
+                  assignRolesMutation.isPending ||
+                  !selectedUserId ||
+                  rolesLoading
+                }
+              >
+                {assignRolesMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Roles'
+                )}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="text-center py-8">

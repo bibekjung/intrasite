@@ -14,9 +14,8 @@ import { ROUTES } from '@/config/routes';
 
 const LoginForm = () => {
   const dispatch = useDispatch();
-  const { isAnimationComplete, isAuthenticated } = useSelector(
-    (state: RootState) => state.auth,
-  );
+  const { isAnimationComplete, isAuthenticated, isLoadingAccessRoutes } =
+    useSelector((state: RootState) => state.auth);
   const { mutate: login, isPending } = useLdapLogin();
 
   const { register, handleSubmit } = useForm<Omit<LoginInput, 'portal'>>({
@@ -49,6 +48,22 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen bg-gray-300 flex items-center justify-center p-4">
+      {/* Loading Screen Overlay */}
+      {isLoadingAccessRoutes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl p-8 flex flex-col items-center gap-4 max-w-sm mx-4">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Loading Access Routes
+              </h3>
+              <p className="text-sm text-gray-600">
+                Please wait while we fetch your permissions...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="rounded-2xl shadow-lg w-full max-w-5xl min-h-[600px] overflow-hidden relative">
         <div
           className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center px-6 py-10 md:px-10 text-white transition-transform duration-1000 ease-in-out"

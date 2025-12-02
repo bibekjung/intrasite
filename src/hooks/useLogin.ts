@@ -2,7 +2,11 @@ import { useMutation } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { loginLdap, getAccessRoutes } from '@/api/auth';
-import { setCredentials, setAccessRoutes } from '@/slices/authSlice';
+import {
+  setCredentials,
+  setAccessRoutes,
+  setIsLoadingAccessRoutes,
+} from '@/slices/authSlice';
 import { type LoginInput, type LoginResponse } from '@/api/schemas/authSchema';
 import { useToast } from '@/components/ui/toaster';
 import { ROUTES } from '@/config/routes';
@@ -39,6 +43,7 @@ export const useLdapLogin = () => {
       // Fetch access routes after successful login
       // Token is already set in storage by setCredentials, so apiClient will use it
       try {
+        dispatch(setIsLoadingAccessRoutes(true));
         const accessRoutes = await getAccessRoutes();
         // Store access routes in Redux state
         dispatch(setAccessRoutes(accessRoutes));
@@ -68,6 +73,7 @@ export const useLdapLogin = () => {
         }
       } catch (error) {
         // Log error but don't block login flow
+        dispatch(setIsLoadingAccessRoutes(false));
         // eslint-disable-next-line no-console
         console.warn(
           'Failed to fetch access routes:',
